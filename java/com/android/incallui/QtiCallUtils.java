@@ -30,10 +30,12 @@
 package com.android.incallui;
 
 import android.content.Context;
+import android.content.pm.ActivityInfo;
 import android.widget.Toast;
 import android.telecom.VideoProfile;
 import com.android.incallui.call.CallList;
 import com.android.incallui.call.DialerCall;
+import org.codeaurora.ims.QtiCallConstants;
 
 /**
  * This class contains Qti specific utiltity functions.
@@ -186,6 +188,22 @@ public class QtiCallUtils {
            return null;
         } else {
            return callList.getIncomingOrActive();
+        }
+    }
+
+    /** This method converts the QtiCallConstants' Orientation modes to the ActivityInfo
+     * screen orientation.
+     */
+    public static int toScreenOrientation(int orientationMode) {
+        switch(orientationMode) {
+            case QtiCallConstants.ORIENTATION_MODE_LANDSCAPE:
+                return ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
+            case QtiCallConstants.ORIENTATION_MODE_PORTRAIT:
+                return ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
+            case QtiCallConstants.ORIENTATION_MODE_DYNAMIC:
+                return ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR;
+            default:
+                return ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
         }
     }
 }

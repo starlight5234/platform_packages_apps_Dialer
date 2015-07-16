@@ -1074,7 +1074,7 @@ public class InCallActivity extends TransactionSafeFragmentActivity
     needDismissPendingDialogs = false;
   }
 
-  private void enableInCallOrientationEventListener(boolean enable) {
+  public void enableInCallOrientationEventListener(boolean enable) {
     if (enable) {
       inCallOrientationEventListener.enable(true /* notifyDeviceOrientationChange */);
     } else {
@@ -1208,6 +1208,9 @@ public class InCallActivity extends TransactionSafeFragmentActivity
   }
 
   public void setAllowOrientationChange(boolean allowOrientationChange) {
+    if (!OrientationModeHandler.getInstance().isOrientationDynamic()) {
+      return;
+    }
     if (this.allowOrientationChange == allowOrientationChange) {
       return;
     }

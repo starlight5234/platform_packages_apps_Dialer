@@ -408,6 +408,8 @@ public class InCallPresenter implements CallList.Listener, AudioModeProvider.Aud
 
     addDetailsListener(CallSubstateNotifier.getInstance());
     CallList.getInstance().addListener(CallSubstateNotifier.getInstance());
+    OrientationModeHandler.getInstance().setUp();
+    addDetailsListener(SessionModificationCauseNotifier.getInstance());
 
     LogUtil.d("InCallPresenter.setUp", "Finished InCallPresenter.setUp");
     Trace.endSection();
@@ -496,6 +498,8 @@ public class InCallPresenter implements CallList.Listener, AudioModeProvider.Aud
 
     removeDetailsListener(CallSubstateNotifier.getInstance());
     CallList.getInstance().removeListener(CallSubstateNotifier.getInstance());
+    OrientationModeHandler.getInstance().tearDown();
+    removeDetailsListener(SessionModificationCauseNotifier.getInstance());
   }
 
   private void attemptFinishActivity() {
@@ -1792,17 +1796,18 @@ public class InCallPresenter implements CallList.Listener, AudioModeProvider.Aud
    * Configures the in-call UI activity so it can change orientations or not. Enables the
    * orientation event listener if allowOrientationChange is true, disables it if false.
    *
-   * @param allowOrientationChange {@code true} if the in-call UI can change between portrait and
-   *     landscape. {@code false} if the in-call UI should be locked in portrait.
+   * @param orientation {@link ActivityInfo#screenOrientation} Actual orientation value to set
    */
-  public void setInCallAllowsOrientationChange(boolean allowOrientationChange) {
+  public void setInCallAllowsOrientationChange(int orientation) {
     if (inCallActivity == null) {
       LogUtil.e(
           "InCallPresenter.setInCallAllowsOrientationChange",
           "InCallActivity is null. Can't set requested orientation.");
       return;
     }
-    inCallActivity.setAllowOrientationChange(allowOrientationChange);
+    inCallActivity.setRequestedOrientation(orientation);
+    inCallActivity.enableInCallOrientationEventListener(
+        orientation == InCallOrientationEventListener.ACTIVITY_PREFERENCE_ALLOW_ROTATION);
   }
 
   public void enableScreenTimeout(boolean enable) {

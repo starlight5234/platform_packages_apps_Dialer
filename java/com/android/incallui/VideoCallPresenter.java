@@ -18,6 +18,7 @@ package com.android.incallui;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.pm.ActivityInfo;
 import android.graphics.Point;
 import android.net.Uri;
 import android.os.Handler;
@@ -761,10 +762,10 @@ public class VideoCallPresenter
     } else if (shouldShowVideoUi) {
       LogUtil.i("VideoCallPresenter.onPrimaryCallChanged", "entering video mode...");
 
+      checkForOrientationAllowedChange(newPrimaryCall);
       updateCameraSelection(newPrimaryCall);
       adjustVideoMode(newPrimaryCall);
     }
-    checkForOrientationAllowedChange(newPrimaryCall);
   }
 
   private boolean isVideoMode() {
@@ -824,11 +825,17 @@ public class VideoCallPresenter
   }
 
   private void checkForOrientationAllowedChange(@Nullable DialerCall call) {
+    if(!OrientationModeHandler.getInstance().isOrientationDynamic()) {
+      return;
+    }
+
     // Call could be null when video call ended. This check could prevent unwanted orientation
     // change before incall UI gets destroyed.
     if (call != null) {
       InCallPresenter.getInstance()
-          .setInCallAllowsOrientationChange(isVideoCall(call) || isVideoUpgrade(call));
+        .setInCallAllowsOrientationChange(isVideoCall(call) || isVideoUpgrade(call) ?
+            InCallOrientationEventListener.ACTIVITY_PREFERENCE_ALLOW_ROTATION :
+            InCallOrientationEventListener.ACTIVITY_PREFERENCE_DISALLOW_ROTATION);
     }
   }
 
