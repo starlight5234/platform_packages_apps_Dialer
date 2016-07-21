@@ -31,6 +31,7 @@ package com.android.incallui;
 
 import android.content.Context;
 import android.content.pm.ActivityInfo;
+import android.telecom.Connection.VideoProvider;
 import android.widget.Toast;
 import android.telecom.VideoProfile;
 import com.android.incallui.call.CallList;
@@ -217,6 +218,24 @@ public class QtiCallUtils {
                 return ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR;
             default:
                 return ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
+        }
+    }
+
+    /**
+     * Returns the call session resource id given the call session event
+     */
+    public static int getCallSessionEventResId(int event) {
+        switch (event) {
+            case VideoProvider.SESSION_EVENT_RX_PAUSE:
+                return R.string.player_stopped;
+            case VideoProvider.SESSION_EVENT_RX_RESUME:
+                return R.string.player_started;
+            case VideoProvider.SESSION_EVENT_CAMERA_FAILURE:
+                return R.string.camera_not_ready;
+            case VideoProvider.SESSION_EVENT_CAMERA_READY:
+                return R.string.camera_ready;
+            default:
+                return R.string.unknown_call_session_event;
         }
     }
 }

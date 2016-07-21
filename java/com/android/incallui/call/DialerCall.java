@@ -1567,6 +1567,11 @@ public class DialerCall implements VideoTechListener, StateChangedListener, Capa
   }
 
   @Override
+  public void onCallSessionEvent(int event) {
+    InCallVideoCallCallbackNotifier.getInstance().callSessionEvent(event);
+  }
+
+  @Override
   public void onVideoUpgradeRequestReceived() {
     LogUtil.enterBlock("DialerCall.onVideoUpgradeRequestReceived");
 

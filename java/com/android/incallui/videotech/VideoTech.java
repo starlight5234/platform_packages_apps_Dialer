@@ -115,5 +115,7 @@ public interface VideoTech {
     void onUpgradedToVideo(boolean switchToSpeaker);
 
     void onImpressionLoggingNeeded(DialerImpression.Type impressionType);
+
+    void onCallSessionEvent(int event);
   }
 }
