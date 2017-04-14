@@ -89,7 +89,8 @@ public class VideoCallPresenter
         InCallPresenter.InCallEventListener,
         VideoCallScreenDelegate,
         CallList.Listener,
-        VideoEventListener {
+        VideoEventListener,
+        PictureModeHelper.Listener {
 
   private static boolean isVideoMode = false;
 
@@ -134,10 +135,17 @@ public class VideoCallPresenter
 
   /** Whether if the call is remotely held. */
   private boolean isRemotelyHeld = false;
+
+  /**
+   * Cache the size set in the "local_preview_surface_size" settings db property
+   */
+  private Point mFixedPreviewSurfaceSize;
   // Holds TRUE if default image should be used as static image else holds FALSE
   private static boolean sUseDefaultImage = false;
   // Holds TRUE if static image needs to be transmitted instead of video preview stream
   private static boolean sShallTransmitStaticImage = false;
+
+  private static PictureModeHelper mPictureModeHelper;
 
   /**
    * Determines if the incoming video is available. If the call session resume event has been
@@ -250,7 +258,7 @@ public class VideoCallPresenter
    * @return {@code true} if the the outgoing video surface should be shown, {@code false}
    *     otherwise.
    */
-  private static boolean showOutgoingVideo(
+  public static boolean showOutgoingVideo(
       Context context, int videoState, int sessionModificationState) {
     if (!VideoUtils.hasCameraPermissionAndShownPrivacyToast(context)) {
       LogUtil.i("VideoCallPresenter.showOutgoingVideo", "Camera permission is disabled by user.");
@@ -370,10 +378,12 @@ public class VideoCallPresenter
   public void initVideoCallScreenDelegate(Context context, VideoCallScreen videoCallScreen) {
     this.context = context;
     this.videoCallScreen = videoCallScreen;
+    mPictureModeHelper = new PictureModeHelper(context);
     isAutoFullscreenEnabled =
         this.context.getResources().getBoolean(R.bool.video_call_auto_fullscreen);
     autoFullscreenTimeoutMillis =
         this.context.getResources().getInteger(R.integer.video_call_auto_fullscreen_timeout);
+    setFixedPreviewSurfaceSize();
   }
 
   /** Called when the user interface is ready to be used. */
@@ -398,6 +408,7 @@ public class VideoCallPresenter
 
     // Register for surface and video events from {@link InCallVideoCallListener}s.
     InCallVideoCallCallbackNotifier.getInstance().addSurfaceChangeListener(this);
+    mPictureModeHelper.setUp(this);
     currentVideoState = VideoProfile.STATE_AUDIO_ONLY;
     currentCallState = DialerCallState.INVALID;
 
@@ -428,6 +439,7 @@ public class VideoCallPresenter
 
     InCallVideoCallCallbackNotifier.getInstance().removeSurfaceChangeListener(this);
     InCallVideoCallCallbackNotifier.getInstance().removeVideoEventListener(this);
+    mPictureModeHelper.tearDown(this);
 
     // Ensure that the call's camera direction is updated (most likely to UNKNOWN). Normally this
     // happens after any call state changes but we're unregistering from InCallPresenter above so
@@ -1126,9 +1138,15 @@ public class VideoCallPresenter
     updateRemoteVideoSurfaceDimensions();
     videoCallScreen.showVideoViews(showOutgoingVideo && !shallTransmitStaticImage() &&
         !QtiCallUtils.hasVideoCrbtVoLteCall(context), showIncomingVideo, isRemotelyHeld);
+    if (BottomSheetHelper.getInstance().canDisablePipMode() && mPictureModeHelper != null) {
+      mPictureModeHelper.setPreviewVideoLayoutParams();
+    }
 
     InCallPresenter.getInstance().enableScreenTimeout(VideoProfile.isAudioOnly(videoState));
     updateFullscreenAndGreenScreenMode(callState, sessionModificationState);
+    if (BottomSheetHelper.getInstance().canDisablePipMode() && mPictureModeHelper != null) {
+      mPictureModeHelper.maybeHideVideoViews();
+    }
   }
 
   /**
@@ -1219,8 +1237,12 @@ public class VideoCallPresenter
       return;
     }
 
+    Point previewSize = (mFixedPreviewSurfaceSize != null) ? mFixedPreviewSurfaceSize :
+        new Point(width, height);
+    LogUtil.i("VideoCallPresenter.changePreviewDimensions", "width: %d, height: %d", previewSize.x,
+        previewSize.y);
     // Resize the surface used to display the preview video
-    getLocalVideoSurfaceTexture().setSurfaceDimensions(new Point(width, height));
+    getLocalVideoSurfaceTexture().setSurfaceDimensions(previewSize);
     videoCallScreen.onLocalVideoDimensionsChanged();
   }
 
@@ -1594,5 +1616,60 @@ public class VideoCallPresenter
         break;
     }
     LogUtil.i("VideoCallPresenter.onCallSessionEvent", sb.toString());
+  }
+
+  /**
+   * Reads the fixed preview size from global settings and caches it
+   */
+  private void setFixedPreviewSurfaceSize() {
+    if (mPictureModeHelper != null) {
+      mFixedPreviewSurfaceSize = mPictureModeHelper.getPreviewSizeFromSetting(context);
+    }
+  }
+
+  /**
+   * Gets called when preview video selection changes
+   * @param boolean previewVideoSelection - New value for preview video selection
+   */
+  @Override
+  public void onPreviewVideoSelectionChanged() {
+    if (primaryCall == null) {
+      return;
+    }
+    setFixedPreviewSurfaceSize();
+    if (mFixedPreviewSurfaceSize != null) {
+      changePreviewDimensions(mFixedPreviewSurfaceSize.x, mFixedPreviewSurfaceSize.y);
+    }
+    showVideoUi(
+        primaryCall.getVideoState(),
+        primaryCall.getState(),
+        primaryCall.getVideoTech().getSessionModificationState(),
+        primaryCall.isRemotelyHeld());
+  }
+
+  /**
+   * Gets called when incoming video selection changes
+   * @param boolean incomingVideoSelection - New value for incoming video selection
+   */
+  @Override
+  public void onIncomingVideoSelectionChanged() {
+    if (primaryCall == null) {
+      return;
+    }
+    showVideoUi(
+        primaryCall.getVideoState(),
+        primaryCall.getState(),
+        primaryCall.getVideoTech().getSessionModificationState(),
+        primaryCall.isRemotelyHeld());
+  }
+
+  public static PictureModeHelper getPictureModeHelper() {
+    return mPictureModeHelper;
+  }
+
+  public static void showPipModeMenu() {
+    if (mPictureModeHelper != null) {
+      mPictureModeHelper.createAndShowDialog();
+    }
   }
 }

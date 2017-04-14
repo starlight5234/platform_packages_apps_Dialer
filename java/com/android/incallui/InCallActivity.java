@@ -438,9 +438,9 @@ public class InCallActivity extends TransactionSafeFragmentActivity
     super.onStart();
 
     isVisible = true;
+    InCallPresenter.getInstance().setActivity(this);
     showMainInCallFragment();
 
-    InCallPresenter.getInstance().setActivity(this);
     enableInCallOrientationEventListener(
         getRequestedOrientation()
             == InCallOrientationEventListener.ACTIVITY_PREFERENCE_ALLOW_ROTATION);

@@ -40,6 +40,7 @@ import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.telecom.Call.Details;
@@ -162,6 +163,7 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
        maybeUpdateTransferInMap();
        maybeUpdateDialpadOptionInMap();
        maybeUpdateCancelModifyCallInMap();
+       maybeUpdatePipModeInMap();
      }
    }
 
@@ -215,6 +217,17 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
      boolean visible = mCall.isVideoCall() && mCall.getState() == DialerCallState.ACTIVE &&
          mCall.can(android.telecom.Call.Details.CAPABILITY_MANAGE_CONFERENCE);
      moreOptionsMap.put(mResources.getString(R.string.manageConferenceLabel), visible);
+   }
+
+   private void maybeUpdatePipModeInMap() {
+     /* show Pip mode option only for active video calls if the settings db property
+        "disable_pip_mode" is set */
+     if (!canDisablePipMode()) {
+        return;
+     }
+     final boolean visible = mCall.isVideoCall() && mCall.getState() == DialerCallState.ACTIVE
+         && !mCall.hasReceivedVideoUpgradeRequest();
+     moreOptionsMap.put(mResources.getString(R.string.pipModeLabel), visible);
    }
 
    public boolean isManageConferenceVisible() {
@@ -287,6 +300,8 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
        displayModifyCallOptions();
      } else if (text.equals(mResources.getString(R.string.cancel_modify_call_label))) {
        displayCancelModifyCallOptions();
+     } else if (text.equals(mResources.getString(R.string.pipModeLabel))) {
+       VideoCallPresenter.showPipModeMenu();
      }
      moreOptionsSheet = null;
    }
@@ -798,5 +813,10 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
       if (isFullscreenMode) {
         dismissBottomSheet();
       }
+    }
+
+    public boolean canDisablePipMode() {
+      return (Settings.Global.getInt(
+         mContext.getContentResolver(), "disable_pip_mode", 0) != 0);
     }
 }

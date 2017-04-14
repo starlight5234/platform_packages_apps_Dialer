@@ -67,6 +67,8 @@ IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <string name="notification_requesting_video_rx_call">"Incoming video rx request"</string>
     <string name="cancel_modify_call_label">Cancel Modify Call</string>
 
+    <!-- Text for the PIP mode button -->
+    <string name="pipModeLabel">PIP Mode</string>
     <!--Bottom Sheet resources.String arrays with same format should be introduced
         for each feature/option to be shown on the bottomsheet -->
     <!--
@@ -75,6 +77,10 @@ IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      -->
     <string-array name="manageConference">
        <item>@string/manageConferenceLabel</item>
+       <item>false</item>
+    </string-array>
+    <string-array name="pipMode">
+       <item>@string/pipModeLabel</item>
        <item>false</item>
     </string-array>
     <string-array name="hide_me">
@@ -130,6 +136,7 @@ IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
        <item>@array/video_tx</item>
        <item>@array/modify_call</item>
        <item>@array/cancel_modify_call</item>
+       <item>@array/pipMode</item>
     </array>
 
     <!-- In-call screen: Modify Call Options for IMS call -->
@@ -160,4 +167,11 @@ IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <string name="call_state_unknown">Unknown</string>
     <string name="call_state_disconnecting">Disconnecting</string>
     <string name="call_state_disconnected">Disconnected</string>
+
+    <!-- Pop up menu options for picture mode -->
+    <string name="video_call_picture_mode_menu_title">Choose Picture Mode</string>
+    <string name="video_call_picture_mode_preview_video">Camera Preview</string>
+    <string name="video_call_picture_mode_incoming_video">Incoming Video</string>
+    <string name="video_call_picture_mode_cancel_option">Cancel</string>
+    <string name="video_call_picture_mode_save_option">Save</string>
 </resources>
