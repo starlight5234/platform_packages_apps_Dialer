@@ -22,6 +22,7 @@ import android.support.annotation.Nullable;
 import android.support.annotation.VisibleForTesting;
 import android.telecom.Call;
 import android.telecom.Call.Details;
+import android.telecom.InCallService.VideoCall;
 import android.telecom.PhoneAccountHandle;
 import android.telecom.VideoProfile;
 import com.android.dialer.common.Assert;
@@ -51,6 +52,7 @@ public class ImsVideoTech implements VideoTech {
   // call.getDetails().getVideoState() reflecting the change. During that time, pause() and
   // unpause() will send the incorrect VideoProfile.
   private boolean transmissionStopped = false;
+  private VideoCall registeredVideoCall;
 
   public ImsVideoTech(LoggingBindings logger, VideoTechListener listener, Call call) {
     this.logger = logger;
@@ -122,6 +124,12 @@ public class ImsVideoTech implements VideoTech {
   }
 
   @Override
+  public VideoCall getVideoCall() {
+      return call == null || (registeredVideoCall != call.getVideoCall()) ? null
+        : call.getVideoCall();
+  }
+
+  @Override
   public void onCallStateChanged(
       Context context, int newState, PhoneAccountHandle phoneAccountHandle) {
     if (!isAvailable(context, phoneAccountHandle)) {
@@ -130,8 +138,9 @@ public class ImsVideoTech implements VideoTech {
 
     if (callback == null) {
       callback = new ImsVideoCallCallback(logger, call, this, listener, context);
-      call.getVideoCall().registerCallback(callback);
     }
+    call.getVideoCall().registerCallback(callback);
+    registeredVideoCall = call.getVideoCall();
 
     if (getSessionModificationState()
             == SessionModificationState.WAITING_FOR_UPGRADE_TO_VIDEO_RESPONSE

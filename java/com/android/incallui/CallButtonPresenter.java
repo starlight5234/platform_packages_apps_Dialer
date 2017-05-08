@@ -460,12 +460,14 @@ public class CallButtonPresenter
     final boolean showSwap = call.can(android.telecom.Call.Details.CAPABILITY_SWAP_CONFERENCE);
     final boolean showHold =
         !showSwap
+            && (!call.hasSentVideoUpgradeRequest() || call.hasVideoUpgadeRequestFailed())
             && call.can(android.telecom.Call.Details.CAPABILITY_SUPPORT_HOLD)
             && call.can(android.telecom.Call.Details.CAPABILITY_HOLD);
     final boolean isCallOnHold = call.getState() == DialerCallState.ONHOLD;
 
     final boolean showAddCall =
-        TelecomAdapter.getInstance().canAddCall() && UserManagerCompat.isUserUnlocked(context);
+        TelecomAdapter.getInstance().canAddCall() && UserManagerCompat.isUserUnlocked(context)
+            && (!call.hasSentVideoUpgradeRequest() || call.hasVideoUpgadeRequestFailed());
     // There can only be two calls so don't show the ability to merge when one of them
     // is a speak easy call.
     final boolean showMerge =
@@ -505,7 +507,7 @@ public class CallButtonPresenter
     inCallButtonUi.setHold(isCallOnHold);
     inCallButtonUi.showButton(InCallButtonIds.BUTTON_MUTE, showMute);
     inCallButtonUi.showButton(InCallButtonIds.BUTTON_SWAP_SIM, showSwapSim);
-    inCallButtonUi.showButton(InCallButtonIds.BUTTON_ADD_CALL, true);
+    inCallButtonUi.showButton(InCallButtonIds.BUTTON_ADD_CALL, showAddCall);
     inCallButtonUi.enableButton(InCallButtonIds.BUTTON_ADD_CALL, showAddCall);
     inCallButtonUi.showButton(InCallButtonIds.BUTTON_UPGRADE_TO_VIDEO, showUpgradeToVideo);
     inCallButtonUi.showButton(InCallButtonIds.BUTTON_UPGRADE_TO_RTT, showUpgradeToRtt);

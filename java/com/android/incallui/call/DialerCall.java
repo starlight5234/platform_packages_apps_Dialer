@@ -1043,7 +1043,7 @@ public class DialerCall implements VideoTechListener, StateChangedListener, Capa
 
   /** @return The {@link VideoCall} instance associated with the {@link Call}. */
   public VideoCall getVideoCall() {
-    return telecomCall == null ? null : telecomCall.getVideoCall();
+    return getVideoTech().getVideoCall();
   }
 
   public List<String> getChildCallIds() {
@@ -1171,6 +1171,10 @@ public class DialerCall implements VideoTechListener, StateChangedListener, Capa
 
   public boolean hasSentRttUpgradeRequest() {
     return false;
+  }
+
+  public boolean hasVideoUpgadeRequestFailed() {
+    return VideoUtils.hasVideoUpgradeRequestFailed(getVideoTech().getSessionModificationState());
   }
 
   /**

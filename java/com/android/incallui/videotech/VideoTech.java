@@ -19,6 +19,7 @@ package com.android.incallui.videotech;
 import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.telecom.InCallService.VideoCall;
 import android.telecom.PhoneAccountHandle;
 import com.android.dialer.logging.DialerImpression;
 import com.android.incallui.video.protocol.VideoCallScreen;
@@ -87,6 +88,8 @@ public interface VideoTech {
   void becomePrimary();
 
   com.android.dialer.logging.VideoTech.Type getVideoTechType();
+
+  VideoCall getVideoCall();
 
   /** Listener for video call events. */
   interface VideoTechListener {

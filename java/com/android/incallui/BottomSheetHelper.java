@@ -103,6 +103,10 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
      }
      mCall = mPrimaryCallTracker.getPrimaryCall();
      LogUtil.i("BottomSheetHelper.updateMap","mCall = " + mCall);
+
+     if (mCall != null && moreOptionsMap != null && mResources != null) {
+       maybeUpdateManageConferenceInMap();
+     }
    }
 
    // Utility function which converts options from string array to HashMap<String,Boolean>
@@ -112,6 +116,24 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
        map.put(answerOptArray[iter][0],Boolean.valueOf(answerOptArray[iter][1]));
      }
      return map;
+   }
+
+   private void maybeUpdateManageConferenceInMap() {
+     /* show manage conference option only for active video conference calls if the call
+        has manage conference capability */
+     boolean visible = mCall.isVideoCall() && mCall.getState() == DialerCallState.ACTIVE &&
+         mCall.can(android.telecom.Call.Details.CAPABILITY_MANAGE_CONFERENCE);
+     moreOptionsMap.put(mResources.getString(R.string.manageConferenceLabel),
+         Boolean.valueOf(visible));
+   }
+
+   public boolean isManageConferenceVisible() {
+     if (moreOptionsMap == null || mResources == null || mCall == null) {
+         LogUtil.w("isManageConferenceVisible","moreOptionsMap or mResources or mCall is null");
+         return false;
+     }
+
+     return moreOptionsMap.get(mResources.getString(R.string.manageConferenceLabel)).booleanValue();
    }
 
    public void showBottomSheet(FragmentManager manager) {
@@ -136,6 +158,9 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
    public void optionSelected(@Nullable String text) {
      //callback for bottomsheet clicks
      LogUtil.d("BottomSheetHelper.optionSelected","text : " + text);
+     if (text.equals(mResources.getString(R.string.manageConferenceLabel))) {
+       manageConferenceCall();
+     }
      moreOptionsSheet = null;
    }
 
@@ -222,4 +247,14 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
       dismissBottomSheet();
       updateMap();
     }
+
+   private void manageConferenceCall() {
+     final InCallActivity inCallActivity = InCallPresenter.getInstance().getActivity();
+     if (inCallActivity == null) {
+       LogUtil.w("BottomSheetHelper.manageConferenceCall", "inCallActivity is null");
+       return;
+     }
+
+     inCallActivity.showConferenceFragment(true);
+   }
 }

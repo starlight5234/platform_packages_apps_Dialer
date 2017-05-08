@@ -138,7 +138,10 @@ public class VideoCallFragment extends Fragment
   private SpeakerButtonController speakerButtonController;
   private CheckableImageButton muteButton;
   private CheckableImageButton cameraOffButton;
+  private CheckableImageButton holdButton;
   private ImageButton swapCameraButton;
+  private ImageButton addCallButton;
+  private ImageButton mergeCallButton;
   private View switchOnHoldButton;
   private View onHoldContainer;
   private SwitchOnHoldCallController switchOnHoldCallController;
@@ -148,6 +151,7 @@ public class VideoCallFragment extends Fragment
   private View previewOffOverlay;
   private ImageView previewOffBlurredImageView;
   private View controls;
+  private View switchControls;
   private View controlsContainer;
   private TextureView previewTextureView;
   private TextureView remoteTextureView;
@@ -258,13 +262,19 @@ public class VideoCallFragment extends Fragment
     mutePreviewOverlay = view.findViewById(R.id.videocall_video_preview_mute_overlay);
     cameraOffButton = (CheckableImageButton) view.findViewById(R.id.videocall_mute_video);
     cameraOffButton.setOnCheckedChangeListener(this);
+    holdButton = (CheckableImageButton) view.findViewById(R.id.videocall_hold_button);
+    holdButton.setOnCheckedChangeListener(this);
     previewOffOverlay = view.findViewById(R.id.videocall_video_preview_off_overlay);
     previewOffBlurredImageView =
         (ImageView) view.findViewById(R.id.videocall_preview_off_blurred_image_view);
     swapCameraButton = (ImageButton) view.findViewById(R.id.videocall_switch_video);
     swapCameraButton.setOnClickListener(this);
-    view.findViewById(R.id.videocall_switch_controls)
-        .setVisibility(getActivity().isInMultiWindowMode() ? View.GONE : View.VISIBLE);
+    switchControls = view.findViewById(R.id.videocall_switch_controls);
+    switchControls.setVisibility(getActivity().isInMultiWindowMode() ? View.GONE : View.VISIBLE);
+    addCallButton = (ImageButton) view.findViewById(R.id.videocall_add_call);
+    addCallButton.setOnClickListener(this);
+    mergeCallButton = (ImageButton) view.findViewById(R.id.videocall_merge_call);
+    mergeCallButton.setOnClickListener(this);
     switchOnHoldButton = view.findViewById(R.id.videocall_switch_on_hold);
     onHoldContainer = view.findViewById(R.id.videocall_on_hold_banner);
     remoteVideoOff = (TextView) view.findViewById(R.id.videocall_remote_video_off);
@@ -442,8 +452,16 @@ public class VideoCallFragment extends Fragment
         .alpha(1)
         .start();
 
-    // Animate onHold to the shown state.
-    switchOnHoldButton
+   switchControls
+        .animate()
+        .translationX(0)
+        .translationY(0)
+        .setInterpolator(linearOutSlowInInterpolator)
+        .alpha(1)
+        .start();
+
+   // Animate onHold to the shown state.
+   switchOnHoldButton
         .animate()
         .translationX(0)
         .translationY(0)
@@ -617,6 +635,15 @@ public class VideoCallFragment extends Fragment
         .alpha(0)
         .start();
 
+    offset = getControlsOffsetEndHidden(switchControls);
+    switchControls
+        .animate()
+        .translationX(offset.x)
+        .translationY(offset.y)
+        .setInterpolator(fastOutLinearInInterpolator)
+        .alpha(0)
+        .start();
+
     // Animate onHold to the hidden state.
     offset = getSwitchOnHoldOffsetEndHidden(switchOnHoldButton);
     switchOnHoldButton
@@ -689,6 +716,14 @@ public class VideoCallFragment extends Fragment
       BottomSheetHelper.getInstance()
              .showBottomSheet(getChildFragmentManager());
       videoCallScreenDelegate.resetAutoFullscreenTimer();
+    } else if (v == addCallButton) {
+      LogUtil.i("VideoCallFragment.onClick", "add call button clicked");
+      inCallButtonUiDelegate.addCallClicked();
+      videoCallScreenDelegate.resetAutoFullscreenTimer();
+    } else if (v == mergeCallButton) {
+      LogUtil.i("VideoCallFragment.onClick", "merge call button clicked");
+      inCallButtonUiDelegate.mergeClicked();
+      videoCallScreenDelegate.resetAutoFullscreenTimer();
     }
   }
 
@@ -715,6 +750,10 @@ public class VideoCallFragment extends Fragment
       }
     } else if (button == muteButton) {
       inCallButtonUiDelegate.muteClicked(isChecked, true /* clickedByUser */);
+      videoCallScreenDelegate.resetAutoFullscreenTimer();
+    } else if (button == holdButton) {
+      LogUtil.i("VideoCallFragment.onCheckedChanged","hold Button");
+      inCallButtonUiDelegate.holdClicked(isChecked);
       videoCallScreenDelegate.resetAutoFullscreenTimer();
     }
   }
@@ -850,13 +889,19 @@ public class VideoCallFragment extends Fragment
       switchOnHoldCallController.setVisible(show);
     } else if (buttonId == InCallButtonIds.BUTTON_SWITCH_CAMERA) {
       swapCameraButton.setEnabled(show);
+    } else if (buttonId == InCallButtonIds.BUTTON_ADD_CALL) {
+      addCallButton.setVisibility(show ? View.VISIBLE : View.GONE);
+    } else if (buttonId == InCallButtonIds.BUTTON_MERGE) {
+      mergeCallButton.setVisibility(show ? View.VISIBLE : View.GONE);
+    } else if (buttonId == InCallButtonIds.BUTTON_HOLD) {
+      holdButton.setVisibility(show ? View.VISIBLE : View.GONE);
     }
   }
 
   @Override
   public void enableButton(@InCallButtonIds int buttonId, boolean enable) {
     LogUtil.v(
-        "VideoCallFragment.setEnabled",
+        "VideoCallFragment.enableButton",
         "buttonId: %s, enable: %b",
         InCallButtonIdsExtension.toString(buttonId),
         enable);
@@ -888,6 +933,9 @@ public class VideoCallFragment extends Fragment
     muteButton.setEnabled(enabled);
     cameraOffButton.setEnabled(enabled);
     switchOnHoldCallController.setEnabled(enabled);
+    addCallButton.setEnabled(enabled);
+    mergeCallButton.setEnabled(enabled);
+    holdButton.setEnabled(enabled);
   }
 
   @Override
@@ -995,7 +1043,7 @@ public class VideoCallFragment extends Fragment
   @Override
   public boolean isManageConferenceVisible() {
     LogUtil.i("VideoCallFragment.isManageConferenceVisible", null);
-    return false;
+    return BottomSheetHelper.getInstance().isManageConferenceVisible();
   }
 
   @Override

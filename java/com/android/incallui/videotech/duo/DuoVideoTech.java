@@ -20,6 +20,7 @@ import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.telecom.Call;
+import android.telecom.InCallService.VideoCall;
 import android.telecom.PhoneAccountHandle;
 import com.android.dialer.common.Assert;
 import com.android.dialer.common.LogUtil;
@@ -201,4 +202,7 @@ public class DuoVideoTech implements VideoTech, DuoListener {
   public com.android.dialer.logging.VideoTech.Type getVideoTechType() {
     return com.android.dialer.logging.VideoTech.Type.LIGHTBRINGER_VIDEO_TECH;
   }
+
+  @Override
+  public VideoCall getVideoCall() {return null;}
 }
