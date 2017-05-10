@@ -405,6 +405,9 @@ public class InCallPresenter implements CallList.Listener, AudioModeProvider.Aud
     addInCallUiListener(motorolaInCallUiNotifier);
     addListener(motorolaInCallUiNotifier);
 
+    addDetailsListener(CallSubstateNotifier.getInstance());
+    CallList.getInstance().addListener(CallSubstateNotifier.getInstance());
+
     LogUtil.d("InCallPresenter.setUp", "Finished InCallPresenter.setUp");
     Trace.endSection();
   }
@@ -489,6 +492,9 @@ public class InCallPresenter implements CallList.Listener, AudioModeProvider.Aud
     attemptCleanup();
     VideoPauseController.getInstance().tearDown();
     AudioModeProvider.getInstance().removeListener(this);
+
+    removeDetailsListener(CallSubstateNotifier.getInstance());
+    CallList.getInstance().removeListener(CallSubstateNotifier.getInstance());
   }
 
   private void attemptFinishActivity() {
