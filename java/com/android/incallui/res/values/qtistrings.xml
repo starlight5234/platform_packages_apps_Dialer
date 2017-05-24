@@ -44,6 +44,13 @@ IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <string name="qti_ims_hideMeText_unselected">Hide Me</string>
     <string name="qti_ims_hideMeText_selected">Show Me</string>
     <string name="qti_ims_defaultImage_fallback">Using default image</string>
+    <string name="qti_description_transfer">Call Transfer</string>
+    <!-- Text for the onscreen "blind transfer" button -->
+    <string name="qti_ims_onscreenBlindTransfer">Blind Transfer</string>
+    <!-- Text for the onscreen "assured transfer" button -->
+    <string name="qti_ims_onscreenAssuredTransfer">Assured Transfer</string>
+    <!-- Text for the onscreen "consultative transfer" button -->
+    <string name="qti_ims_onscreenConsultativeTransfer">Consultative Transfer</string>
 
     <!--Bottom Sheet resources.String arrays with same format should be introduced
         for each feature/option to be shown on the bottomsheet -->
@@ -63,11 +70,16 @@ IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
        <item>@string/qti_description_target_deflect</item>
        <item>false</item>
     </string-array>
+    <string-array name="transfer">
+       <item>@string/qti_description_transfer</item>
+       <item>false</item>
+    </string-array>
 
     <!-- array of all the options to ensure mapping-->
     <array name="bottom_sheet_more_options">
        <item>@array/manageConference</item>
        <item>@array/hide_me</item>
        <item>@array/deflect</item>
+       <item>@array/transfer</item>
     </array>
 </resources>
