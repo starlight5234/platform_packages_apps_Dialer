@@ -423,6 +423,7 @@ public class CallButtonPresenter
               : CameraDirection.CAMERA_DIRECTION_BACK_FACING;
       call.setCameraDir(cameraDir);
       call.getVideoTech().setCamera(cameraId);
+      InCallZoomController.getInstance().onCameraEnabled(cameraId);
     }
   }
 

@@ -407,6 +407,7 @@ public class InCallPresenter implements CallList.Listener, AudioModeProvider.Aud
     MotorolaInCallUiNotifier motorolaInCallUiNotifier = new MotorolaInCallUiNotifier(context);
     addInCallUiListener(motorolaInCallUiNotifier);
     addListener(motorolaInCallUiNotifier);
+    InCallZoomController.getInstance().setUp(context);
 
     addDetailsListener(CallSubstateNotifier.getInstance());
     CallList.getInstance().addListener(CallSubstateNotifier.getInstance());
@@ -503,6 +504,7 @@ public class InCallPresenter implements CallList.Listener, AudioModeProvider.Aud
     CallList.getInstance().removeListener(CallSubstateNotifier.getInstance());
     OrientationModeHandler.getInstance().tearDown();
     removeDetailsListener(SessionModificationCauseNotifier.getInstance());
+    InCallZoomController.getInstance().tearDown();
   }
 
   private void attemptFinishActivity() {
