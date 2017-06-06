@@ -834,7 +834,11 @@ public class InCallActivity extends TransactionSafeFragmentActivity
     dialpadFragmentManager.executePendingTransactions();
 
     Logger.get(this).logScreenView(ScreenEvent.Type.INCALL_DIALPAD, this);
-    getInCallOrRttCallScreen().onInCallScreenDialpadVisibilityChange(true);
+    InCallScreen inCallScreen = getInCallOrRttCallScreen();
+    if (inCallScreen == null) {
+      return;
+    }
+    inCallScreen.onInCallScreenDialpadVisibilityChange(true);
     notifyDialpadVisibilityState(true);
   }
 
@@ -851,14 +855,18 @@ public class InCallActivity extends TransactionSafeFragmentActivity
       transaction.commitAllowingStateLoss();
       dialpadFragmentManager.executePendingTransactions();
       dialpadFragment.setUserVisibleHint(false);
-      getInCallOrRttCallScreen().onInCallScreenDialpadVisibilityChange(false);
+      InCallScreen inCallScreen = getInCallOrRttCallScreen();
+      if (inCallScreen == null) {
+        return;
+      }
+      inCallScreen.onInCallScreenDialpadVisibilityChange(false);
       notifyDialpadVisibilityState(false);
     }
   }
 
   public void notifyDialpadVisibilityState(boolean isShowing) {
-    if (getActiveInCallScreen() != null) {
-      getActiveInCallScreen().onInCallShowDialpad(isShowing);
+    if (getInCallOrRttCallScreen() != null) {
+      getInCallOrRttCallScreen().onInCallShowDialpad(isShowing);
     } else {
       LogUtil.w("InCallActvity.showDialpadFragment","in call screen is null");
     }
@@ -1089,18 +1097,6 @@ public class InCallActivity extends TransactionSafeFragmentActivity
     }
   }
 
-  private InCallScreen getActiveInCallScreen() {
-    String tag = null;
-    if (didShowVideoCallScreen) {
-       tag = Tags.VIDEO_CALL_SCREEN;
-    } else if (didShowInCallScreen) {
-      tag = Tags.IN_CALL_SCREEN;
-    }
-
-    return (tag == null) ? null : (InCallScreen)
-       getSupportFragmentManager().findFragmentByTag(tag);
-  }
-
   @Nullable
   public FragmentManager getDialpadFragmentManager() {
     InCallScreen inCallScreen = getInCallOrRttCallScreen();
@@ -1111,7 +1107,9 @@ public class InCallActivity extends TransactionSafeFragmentActivity
   }
 
   public int getDialpadContainerId() {
-    return getInCallOrRttCallScreen().getAnswerAndDialpadContainerResourceId();
+    InCallScreen inCallScreen = getInCallOrRttCallScreen();
+    return (inCallScreen == null) ? 0 :
+        inCallScreen.getAnswerAndDialpadContainerResourceId();
   }
 
   @Override
@@ -1688,6 +1686,9 @@ public class InCallActivity extends TransactionSafeFragmentActivity
     }
     if (didShowRttCallScreen) {
       inCallScreen = getRttCallScreen();
+    }
+    if (didShowVideoCallScreen) {
+      inCallScreen = (InCallScreen) getVideoCallScreen();
     }
     return inCallScreen;
   }

@@ -137,6 +137,7 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
        maybeUpdateHideMeInMap();
        maybeUpdateDeflectInMap();
        maybeUpdateTransferInMap();
+       maybeUpdateDialpadOptionInMap();
      }
    }
 
@@ -202,6 +203,8 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
        deflectCall();
      } else if (text.equals(mResources.getString(R.string.qti_description_transfer))) {
        transferCall();
+     } else if (text.equals(mResources.getString(R.string.dialpad_label))) {
+       showDialpad();
      }
      moreOptionsSheet = null;
    }
@@ -231,8 +234,9 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
          int primaryCallState = call.getState();
          return !(activity.isInMultiWindowMode()
            || call.isEmergencyCall()
-           || DialerCallState.isDialing(primaryCallState)
-           || DialerCallState.CONNECTING == primaryCallState
+           || ((DialerCallState.isDialing(primaryCallState) ||
+           DialerCallState.CONNECTING == primaryCallState) &&
+           !call.isVideoCall())
            || DialerCallState.DISCONNECTING == primaryCallState
            || call.hasSentVideoUpgradeRequest()
            || !(getPhoneIdExtra(call) != QtiCallConstants.INVALID_PHONE_ID));
@@ -484,5 +488,27 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
      } catch (QtiImsException e) {
        LogUtil.e("BottomSheetHelper.sendCallTransferRequest", "exception " + e);
      }
+   }
+
+   private void showDialpad() {
+     final InCallActivity inCallActivity = InCallPresenter.getInstance().getActivity();
+     if (inCallActivity == null) {
+       LogUtil.w("BottomSheetHelper.showDialpad", "inCallActivity is null");
+       return;
+     }
+
+     inCallActivity.showDialpadFragment(true, true);
+   }
+
+   private void maybeUpdateDialpadOptionInMap() {
+     // Enable dialpad option in bottomsheet only for video calls.
+     // When video call is held, UI displays onscreen dialpad button
+     // similar to volte calls.
+     final int primaryCallState = mCall.getNonConferenceState();
+     final boolean enable = mCall.isVideoCall()
+         && primaryCallState != DialerCallState.INCOMING
+         && primaryCallState != DialerCallState.CALL_WAITING
+         && primaryCallState != DialerCallState.ONHOLD;
+     moreOptionsMap.put(mResources.getString(R.string.dialpad_label), enable);
    }
 }

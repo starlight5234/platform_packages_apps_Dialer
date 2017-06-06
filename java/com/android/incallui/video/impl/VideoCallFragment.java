@@ -1201,7 +1201,11 @@ public class VideoCallFragment extends Fragment
 
   @Override
   public void onInCallScreenDialpadVisibilityChange(boolean isShowing) {
-    LogUtil.i("VideoCallFragment.onInCallScreenDialpadVisibilityChange", null);
+    LogUtil.i("VideoCallFragment.onInCallScreenDialpadVisibilityChange", "isShowing = "
+        + isShowing);
+    if (!isShowing) {
+      videoCallScreenDelegate.resetAutoFullscreenTimer();
+    }
   }
 
   @Override
@@ -1215,7 +1219,7 @@ public class VideoCallFragment extends Fragment
 
   @Override
   public int getAnswerAndDialpadContainerResourceId() {
-    return 0;
+    return R.id.videocall_dialpad_container;
   }
 
   @Override
