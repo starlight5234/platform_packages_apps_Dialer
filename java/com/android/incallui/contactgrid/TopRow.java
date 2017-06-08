@@ -32,6 +32,7 @@ import com.android.dialer.common.LogUtil;
 import com.android.incallui.call.state.DialerCallState;
 import com.android.incallui.incall.protocol.PrimaryCallState;
 import com.android.incallui.incall.protocol.PrimaryInfo;
+import com.android.incallui.QtiCallUtils;
 import com.android.incallui.videotech.utils.SessionModificationState;
 import com.android.incallui.videotech.utils.VideoUtils;
 
@@ -141,7 +142,7 @@ public class TopRow {
 
   private static CharSequence getLabelForIncoming(Context context, PrimaryCallState state) {
     if (state.isVideoCall()) {
-      return getLabelForIncomingVideo(context, state.sessionModificationState(), state.isWifi());
+      return getLabelForIncomingVideo(context, state.isWifi());
     } else if (state.isWifi() && !TextUtils.isEmpty(state.connectionLabel())) {
       return state.connectionLabel();
     } else if (isAccount(state)) {
@@ -169,21 +170,9 @@ public class TopRow {
     return spannable;
   }
 
-  private static CharSequence getLabelForIncomingVideo(
-      Context context, @SessionModificationState int sessionModificationState, boolean isWifi) {
-    if (sessionModificationState == SessionModificationState.RECEIVED_UPGRADE_TO_VIDEO_REQUEST) {
-      if (isWifi) {
-        return context.getString(R.string.contact_grid_incoming_wifi_video_call);
-      } else {
-        return context.getString(R.string.contact_grid_incoming_video_call);
-      }
-    } else {
-      if (isWifi) {
-        return context.getString(R.string.contact_grid_incoming_wifi_video_call);
-      } else {
-        return context.getString(R.string.contact_grid_incoming_video_call);
-      }
-    }
+  private static CharSequence getLabelForIncomingVideo(Context context, boolean isWifi) {
+      return isWifi ? QtiCallUtils.getLabelForIncomingWifiVideoCall(context) :
+          QtiCallUtils.getLabelForIncomingVideoCall(context);
   }
 
   private static CharSequence getLabelForDialing(Context context, PrimaryCallState state) {
@@ -265,7 +254,7 @@ public class TopRow {
       case SessionModificationState.UPGRADE_TO_VIDEO_REQUEST_TIMED_OUT:
         return context.getString(R.string.incall_video_call_request_timed_out);
       case SessionModificationState.RECEIVED_UPGRADE_TO_VIDEO_REQUEST:
-        return getLabelForIncomingVideo(context, state.sessionModificationState(), state.isWifi());
+        return getLabelForIncomingVideo(context, state.isWifi());
       case SessionModificationState.NO_REQUEST:
       default:
         Assert.fail();

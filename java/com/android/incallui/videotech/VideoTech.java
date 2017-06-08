@@ -63,7 +63,13 @@ public interface VideoTech {
 
   void acceptVideoRequest(@NonNull Context context);
 
+  void upgradeToVideo(int videoState);
+
   void acceptVideoRequestAsAudio();
+
+  void acceptVideoRequest(int videoState);
+
+  int getRequestedVideoState();
 
   void declineVideoRequest();
 

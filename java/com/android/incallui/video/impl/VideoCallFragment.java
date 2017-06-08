@@ -1022,7 +1022,11 @@ public class VideoCallFragment extends Fragment
     } else if (buttonId == InCallButtonIds.BUTTON_MUTE) {
       muteButton.setEnabled(show);
     } else if (buttonId == InCallButtonIds.BUTTON_PAUSE_VIDEO) {
-      cameraOffButton.setEnabled(show);
+      if (QtiCallUtils.useExt(getContext())) {
+        cameraOffButton.setVisibility(View.GONE);
+      } else {
+        cameraOffButton.setEnabled(show);
+      }
     } else if (buttonId == InCallButtonIds.BUTTON_SWITCH_TO_SECONDARY) {
       switchOnHoldCallController.setVisible(show);
     } else if (buttonId == InCallButtonIds.BUTTON_SWITCH_CAMERA) {

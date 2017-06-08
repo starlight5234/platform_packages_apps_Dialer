@@ -185,13 +185,25 @@ public class ImsVideoTech implements VideoTech {
   @Override
   public void upgradeToVideo(@NonNull Context context) {
     LogUtil.enterBlock("ImsVideoTech.upgradeToVideo");
-
     int unpausedVideoState = getUnpausedVideoState(call.getDetails().getVideoState());
     call.getVideoCall()
         .sendSessionModifyRequest(
             new VideoProfile(unpausedVideoState | VideoProfile.STATE_BIDIRECTIONAL));
     setSessionModificationState(SessionModificationState.WAITING_FOR_UPGRADE_TO_VIDEO_RESPONSE);
     logger.logImpression(DialerImpression.Type.IMS_VIDEO_UPGRADE_REQUESTED);
+  }
+
+
+  @Override
+  public void upgradeToVideo(int videoState) {
+    LogUtil.i("ImsVideoTech.upgradeToVideo", "videostate = " + videoState);
+    int unpausedVideoState = getUnpausedVideoState(videoState);
+    call.getVideoCall()
+        .sendSessionModifyRequest(
+            new VideoProfile(unpausedVideoState | videoState));
+    setSessionModificationState((videoState == VideoProfile.STATE_AUDIO_ONLY)
+        ? SessionModificationState.WAITING_FOR_RESPONSE
+        : SessionModificationState.WAITING_FOR_UPGRADE_TO_VIDEO_RESPONSE);
   }
 
   @Override
@@ -210,6 +222,17 @@ public class ImsVideoTech implements VideoTech {
     LogUtil.enterBlock("ImsVideoTech.acceptVideoRequestAsAudio");
     call.getVideoCall().sendSessionModifyResponse(new VideoProfile(VideoProfile.STATE_AUDIO_ONLY));
     logger.logImpression(DialerImpression.Type.IMS_VIDEO_REQUEST_ACCEPTED_AS_AUDIO);
+  }
+
+  @Override
+  public void acceptVideoRequest(int requestedVideoState) {
+    LogUtil.i("ImsVideoTech.acceptVideoRequest", "videoState: " + requestedVideoState);
+    call.getVideoCall().sendSessionModifyResponse(new VideoProfile(requestedVideoState));
+    setSessionModificationState(SessionModificationState.NO_REQUEST);
+    // Telecom manages audio route for us
+    if (VideoProfile.isVideo(requestedVideoState)) {
+      listener.onUpgradedToVideo(false /* switchToSpeaker */);
+    }
   }
 
   @Override
@@ -346,11 +369,20 @@ public class ImsVideoTech implements VideoTech {
     return com.android.dialer.logging.VideoTech.Type.IMS_VIDEO_TECH;
   }
 
+  @Override
+  public int getRequestedVideoState() {
+      if (callback == null) {
+        LogUtil.w("ImsVideoTech.getRequestedVideoState", "callback is null");
+        return VideoProfile.STATE_AUDIO_ONLY;
+      }
+      return callback.getRequestedVideoState();
+  }
+
   private boolean canPause() {
     return call.getDetails().can(Details.CAPABILITY_CAN_PAUSE_VIDEO);
   }
 
-  static int getUnpausedVideoState(int videoState) {
+  public static int getUnpausedVideoState(int videoState) {
     return videoState & (~VideoProfile.STATE_PAUSED);
   }
 }

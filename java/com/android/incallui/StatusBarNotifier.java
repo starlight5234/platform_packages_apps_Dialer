@@ -719,6 +719,14 @@ public class StatusBarNotifier
     } else if (call.getVideoTech().getSessionModificationState()
         == SessionModificationState.RECEIVED_UPGRADE_TO_VIDEO_REQUEST) {
       resId = R.string.notification_requesting_video_call;
+      final int requestedVideoState = call.getVideoTech().getRequestedVideoState();
+      if(!VideoProfile.isBidirectional(requestedVideoState)) {
+        if(VideoProfile.isTransmissionEnabled(requestedVideoState)) {
+          resId = R.string.notification_requesting_video_tx_call;
+        } else if(VideoProfile.isReceptionEnabled(requestedVideoState)) {
+          resId = R.string.notification_requesting_video_rx_call;
+        }
+      }
     }
 
     // Is the call placed through work connection service.

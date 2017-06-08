@@ -482,8 +482,9 @@ public class CallButtonPresenter
                 .stream()
                 .noneMatch(c -> c != null && c.isSpeakEasyCall())
             && call.can(android.telecom.Call.Details.CAPABILITY_MERGE_CONFERENCE);
-    final boolean showUpgradeToVideo = !isVideo && (hasVideoCallCapabilities(call));
-    final boolean showDowngradeToAudio = isVideo && isDowngradeToAudioSupported(call);
+    final boolean useExt = QtiCallUtils.useExt(context);
+    final boolean showUpgradeToVideo = !isVideo && (hasVideoCallCapabilities(call)) && !useExt;
+    final boolean showDowngradeToAudio = isVideo && isDowngradeToAudioSupported(call) && !useExt;
     final boolean showMute = call.can(android.telecom.Call.Details.CAPABILITY_MUTE);
 
     final boolean hasCameraPermission =

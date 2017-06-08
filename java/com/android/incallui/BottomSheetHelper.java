@@ -40,6 +40,7 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.telecom.Call.Details;
+import android.telecom.VideoProfile;
 import android.view.View;
 
 import com.android.dialer.common.LogUtil;
@@ -48,15 +49,14 @@ import com.android.incallui.call.DialerCall;
 import com.android.incallui.call.state.DialerCallState;
 import com.android.incallui.videotech.utils.VideoUtils;
 
-import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.codeaurora.ims.QtiCallConstants;
 import org.codeaurora.ims.QtiImsExtListenerBaseImpl;
 import org.codeaurora.ims.QtiImsExtManager;
 import org.codeaurora.ims.QtiImsException;
-import org.codeaurora.ims.utils.QtiCallUtils;
 import org.codeaurora.ims.utils.QtiImsExtUtils;
 
 public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeListener,
@@ -84,6 +84,9 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
           LogUtil.w("BottomSheetHelper.receiveCallTransferResponse", "result: " + result);
      }
    };
+
+   private AlertDialog modifyCallDialog;
+   private static final int INVALID_INDEX = -1;
 
    private BottomSheetHelper() {
      LogUtil.d("BottomSheetHelper"," ");
@@ -134,6 +137,8 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
 
      if (mCall != null && moreOptionsMap != null && mResources != null) {
        maybeUpdateManageConferenceInMap();
+       maybeUpdateOneWayVideoOptionsInMap();
+       maybeUpdateModifyCallInMap();
        maybeUpdateHideMeInMap();
        maybeUpdateDeflectInMap();
        maybeUpdateTransferInMap();
@@ -150,13 +155,31 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
      return map;
    }
 
+   private boolean isOneWayVideoOptionsVisible() {
+     final int primaryCallState = mCall.getState();
+     final int requestedVideoState = mCall.getVideoTech().getRequestedVideoState();
+     return (QtiCallUtils.useExt(mContext) && mCall.hasReceivedVideoUpgradeRequest()
+       && VideoProfile.isAudioOnly(mCall.getVideoState())
+       && VideoProfile.isBidirectional(requestedVideoState))
+       || ((DialerCallState.INCOMING == primaryCallState
+       || DialerCallState.CALL_WAITING == primaryCallState)
+       && QtiCallUtils.isVideoBidirectional(mCall));
+   }
+
+   private boolean isModifyCallOptionsVisible() {
+     final int primaryCallState = mCall.getState();
+     return QtiCallUtils.useExt(mContext) && (DialerCallState.ACTIVE == primaryCallState
+        || DialerCallState.ONHOLD == primaryCallState)
+        && QtiCallUtils.hasVoiceOrVideoCapabilities(mCall)
+        && !mCall.hasReceivedVideoUpgradeRequest();
+   }
+
    private void maybeUpdateManageConferenceInMap() {
      /* show manage conference option only for active video conference calls if the call
         has manage conference capability */
      boolean visible = mCall.isVideoCall() && mCall.getState() == DialerCallState.ACTIVE &&
          mCall.can(android.telecom.Call.Details.CAPABILITY_MANAGE_CONFERENCE);
-     moreOptionsMap.put(mResources.getString(R.string.manageConferenceLabel),
-         Boolean.valueOf(visible));
+     moreOptionsMap.put(mResources.getString(R.string.manageConferenceLabel), visible);
    }
 
    public boolean isManageConferenceVisible() {
@@ -165,7 +188,8 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
          return false;
      }
 
-     return moreOptionsMap.get(mResources.getString(R.string.manageConferenceLabel)).booleanValue();
+     return moreOptionsMap.get(mResources.getString(R.string.manageConferenceLabel)).booleanValue()
+        && !mCall.hasReceivedVideoUpgradeRequest();
    }
 
    public void showBottomSheet(FragmentManager manager) {
@@ -189,6 +213,9 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
        callTransferDialog.dismiss();
        callTransferDialog = null;
      }
+     if (modifyCallDialog != null && modifyCallDialog.isShowing()) {
+       modifyCallDialog.dismiss();
+     }
    }
 
    public void optionSelected(@Nullable String text) {
@@ -205,6 +232,12 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
        transferCall();
      } else if (text.equals(mResources.getString(R.string.dialpad_label))) {
        showDialpad();
+     } else if (text.equals(mResources.getString(R.string.video_tx_label))) {
+       acceptIncomingCallOrUpgradeRequest(VideoProfile.STATE_TX_ENABLED);
+     } else if (text.equals(mResources.getString(R.string.video_rx_label))) {
+       acceptIncomingCallOrUpgradeRequest(VideoProfile.STATE_RX_ENABLED);
+     } else if (text.equals(mResources.getString(R.string.modify_call_label))) {
+       displayModifyCallOptions();
      }
      moreOptionsSheet = null;
    }
@@ -250,7 +283,6 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
      if (moreOptionsMenuButton == null) {
        return;
      }
-
      if (isVisible) {
        moreOptionsMenuButton.setVisibility(View.VISIBLE);
      } else {
@@ -331,11 +363,6 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
    }
 
     @Override
-    public void onFullscreenModeChanged(boolean isFullscreenMode) {
-      //No-op
-    }
-
-    @Override
     public void onSendStaticImageStateChanged(boolean isEnabled) {
       //No-op
     }
@@ -400,11 +427,8 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
    }
 
    private void maybeUpdateTransferInMap() {
-     if (getCallTransferCapabilities() != 0) {
-       moreOptionsMap.put(mResources.getString(R.string.qti_description_transfer), Boolean.TRUE);
-     } else {
-       moreOptionsMap.put(mResources.getString(R.string.qti_description_transfer), Boolean.FALSE);
-     }
+     moreOptionsMap.put(mResources.getString(R.string.qti_description_transfer),
+         getCallTransferCapabilities() != 0 && !mCall.hasReceivedVideoUpgradeRequest());
    }
 
    private void transferCall() {
@@ -438,7 +462,7 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
               dialog.dismiss();
          }
      };
-     builder.setSingleChoiceItems(items.toArray(new CharSequence[0]), -1, listener);
+     builder.setSingleChoiceItems(items.toArray(new CharSequence[0]), INVALID_INDEX, listener);
      callTransferDialog = builder.create();
      callTransferDialog.show();
    }
@@ -511,4 +535,108 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
          && primaryCallState != DialerCallState.ONHOLD;
      moreOptionsMap.put(mResources.getString(R.string.dialpad_label), enable);
    }
+
+   private void maybeUpdateOneWayVideoOptionsInMap() {
+     final boolean showOneWayVideo = isOneWayVideoOptionsVisible();
+     moreOptionsMap.put(mResources.getString(R.string.video_rx_label), showOneWayVideo);
+     moreOptionsMap.put(mResources.getString(R.string.video_tx_label), showOneWayVideo);
+   }
+
+   private void maybeUpdateModifyCallInMap() {
+     moreOptionsMap.put(mContext.getResources().getString(R.string.modify_call_label),
+        isModifyCallOptionsVisible());
+   }
+
+   private void acceptIncomingCallOrUpgradeRequest(int videoState) {
+     if (mCall == null) {
+       LogUtil.e("BottomSheetHelper.acceptIncomingCallOrUpgradeRequest", "Call is null. Return");
+       return;
+     }
+
+     if (mCall.hasReceivedVideoUpgradeRequest()) {
+       mCall.getVideoTech().acceptVideoRequest(videoState);
+     } else {
+       mCall.answer(videoState);
+     }
+   }
+
+    /**
+     * The function is called when Modify Call button gets pressed. The function creates and
+     * displays modify call options.
+     */
+    public void displayModifyCallOptions() {
+      final InCallActivity inCallActivity = InCallPresenter.getInstance().getActivity();
+      if (inCallActivity == null) {
+        LogUtil.e("BottomSheetHelper.displayModifyCallOptions", "inCallActivity is NULL");
+        return;
+      }
+
+      if (mCall == null) {
+        LogUtil.e("BottomSheetHelper.displayModifyCallOptions",
+            "Can't display modify call options. Call is null");
+        return;
+      }
+
+      final ArrayList<CharSequence> items = new ArrayList<CharSequence>();
+      final ArrayList<Integer> itemToCallType = new ArrayList<Integer>();
+
+      // Prepare the string array and mapping.
+      if (QtiCallUtils.hasVoiceCapabilities(mCall) && mCall.isVideoCall()) {
+        items.add(mResources.getText(R.string.modify_call_option_voice));
+        itemToCallType.add(VideoProfile.STATE_AUDIO_ONLY);
+      }
+
+      if (QtiCallUtils.hasReceiveVideoCapabilities(mCall) && !QtiCallUtils.isVideoRxOnly(mCall)) {
+        items.add(mResources.getText(R.string.modify_call_option_vt_rx));
+        itemToCallType.add(VideoProfile.STATE_RX_ENABLED);
+      }
+
+      if (QtiCallUtils.hasTransmitVideoCapabilities(mCall) && !QtiCallUtils.isVideoTxOnly(mCall)) {
+        items.add(mResources.getText(R.string.modify_call_option_vt_tx));
+        itemToCallType.add(VideoProfile.STATE_TX_ENABLED);
+      }
+
+      if (QtiCallUtils.hasReceiveVideoCapabilities(mCall)
+          && QtiCallUtils.hasTransmitVideoCapabilities(mCall)
+          && !QtiCallUtils.isVideoBidirectional(mCall)) {
+        items.add(mResources.getText(R.string.modify_call_option_vt));
+        itemToCallType.add(VideoProfile.STATE_BIDIRECTIONAL);
+      }
+
+      AlertDialog.Builder builder = new AlertDialog.Builder(inCallActivity);
+      builder.setTitle(R.string.modify_call_option_title);
+
+      DialogInterface.OnClickListener listener = new DialogInterface.OnClickListener() {
+          @Override
+          public void onClick(DialogInterface dialog, int item) {
+            final int selCallType = itemToCallType.get(item);
+            Log.v(this, "Videocall: ModifyCall: upgrade/downgrade to "
+                + QtiCallUtils.callTypeToString(selCallType));
+            changeToVideoClicked(mCall, selCallType);
+            dialog.dismiss();
+          }
+      };
+      builder.setSingleChoiceItems(items.toArray(new CharSequence[0]), INVALID_INDEX, listener);
+      modifyCallDialog = builder.create();
+      modifyCallDialog.show();
+    }
+
+    /**
+     * Sends a session modify request to the telephony framework
+     */
+    private void changeToVideoClicked(DialerCall call, int videoState) {
+      call.getVideoTech().upgradeToVideo(videoState);
+    }
+
+    /**
+     * Handles a change to the fullscreen mode of the app.
+     *
+     * @param isFullscreenMode {@code true} if the app is now fullscreen, {@code false} otherwise.
+     */
+    @Override
+    public void onFullscreenModeChanged(boolean isFullscreenMode) {
+      if (isFullscreenMode) {
+        dismissBottomSheet();
+      }
+    }
 }
