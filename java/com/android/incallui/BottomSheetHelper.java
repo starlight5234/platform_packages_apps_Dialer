@@ -52,6 +52,7 @@ import com.android.dialer.util.CallUtil;
 import com.android.incallui.call.DialerCall;
 import com.android.incallui.call.state.DialerCallState;
 import com.android.incallui.videotech.utils.VideoUtils;
+import com.android.incallui.videotech.utils.SessionModificationState;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -75,7 +76,9 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
    private PrimaryCallTracker mPrimaryCallTracker;
    private Resources mResources;
    private static BottomSheetHelper mHelper;
+   private boolean mHasSentCancelUpgradeRequest = false;
    private AlertDialog callTransferDialog;
+   private AlertDialog mCancelModifyCallDialog;
    private static final int BLIND_TRANSFER = 0;
    private static final int ASSURED_TRANSFER = 1;
    private static final int CONSULTATIVE_TRANSFER = 2;
@@ -87,6 +90,14 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
      @Override
      public void receiveCallTransferResponse(int phoneId, int result) {
           LogUtil.w("BottomSheetHelper.receiveCallTransferResponse", "result: " + result);
+     }
+
+     /* Handles cancel call modify response */
+     @Override
+     public void receiveCancelModifyCallResponse(int phoneId, int result) {
+          LogUtil.w("BottomSheetHelper.receiveCancelModifyCallResponse", "result: " + result);
+          mHasSentCancelUpgradeRequest = false;
+          maybeUpdateCancelModifyCallInMap();
      }
    };
 
@@ -130,6 +141,7 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
      mContext = null;
      mResources = null;
      moreOptionsMap = null;
+     mHasSentCancelUpgradeRequest = false;
    }
 
    public void updateMap() {
@@ -149,6 +161,7 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
        maybeUpdateDeflectInMap();
        maybeUpdateTransferInMap();
        maybeUpdateDialpadOptionInMap();
+       maybeUpdateCancelModifyCallInMap();
      }
    }
 
@@ -174,10 +187,26 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
 
    private boolean isModifyCallOptionsVisible() {
      final int primaryCallState = mCall.getState();
+     boolean hideModifyCallOption = false;
+     if (QtiImsExtUtils.isCancelModifyCallSupported(getPhoneId(), mContext)) {
+         hideModifyCallOption = !QtiCallUtils.hasReceiveVideoCapabilities(mCall)
+             && !QtiCallUtils.hasTransmitVideoCapabilities(mCall);
+     }
      return QtiCallUtils.useExt(mContext) && (DialerCallState.ACTIVE == primaryCallState
         || DialerCallState.ONHOLD == primaryCallState)
         && QtiCallUtils.hasVoiceOrVideoCapabilities(mCall)
-        && !mCall.hasReceivedVideoUpgradeRequest();
+        && !mCall.hasReceivedVideoUpgradeRequest()
+        && !isCancelModifyCallOptionsVisible()
+        && !hideModifyCallOption;
+   }
+
+   private boolean isCancelModifyCallOptionsVisible() {
+     if (QtiImsExtUtils.isCancelModifyCallSupported(getPhoneId(), mContext)) {
+       DialerCall call = mPrimaryCallTracker.getPrimaryCall();
+       return !mHasSentCancelUpgradeRequest && (call.getVideoTech().getSessionModificationState()
+         == SessionModificationState.WAITING_FOR_UPGRADE_TO_VIDEO_RESPONSE);
+     }
+     return false;
    }
 
    private void maybeUpdateManageConferenceInMap() {
@@ -222,6 +251,11 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
      if (modifyCallDialog != null && modifyCallDialog.isShowing()) {
        modifyCallDialog.dismiss();
      }
+
+     if (mCancelModifyCallDialog != null && mCancelModifyCallDialog.isShowing()) {
+       mCancelModifyCallDialog.dismiss();
+       mCancelModifyCallDialog = null;
+     }
    }
 
    public void optionSelected(@Nullable String text) {
@@ -251,6 +285,8 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
        acceptIncomingCallOrUpgradeRequest(VideoProfile.STATE_RX_ENABLED);
      } else if (text.equals(mResources.getString(R.string.modify_call_label))) {
        displayModifyCallOptions();
+     } else if (text.equals(mResources.getString(R.string.cancel_modify_call_label))) {
+       displayCancelModifyCallOptions();
      }
      moreOptionsSheet = null;
    }
@@ -285,7 +321,8 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
            !call.isVideoCall())
            || DialerCallState.DISCONNECTING == primaryCallState
            || call.hasSentVideoUpgradeRequest()
-           || !(getPhoneIdExtra(call) != QtiCallConstants.INVALID_PHONE_ID));
+           || !(getPhoneIdExtra(call) != QtiCallConstants.INVALID_PHONE_ID))
+           || isCancelModifyCallOptionsVisible();
        }
      }
      LogUtil.w("BottomSheetHelper shallShowMoreButton","returns false");
@@ -617,6 +654,11 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
         isModifyCallOptionsVisible());
    }
 
+   private void maybeUpdateCancelModifyCallInMap() {
+     moreOptionsMap.put(mContext.getResources().getString(R.string.cancel_modify_call_label),
+        isCancelModifyCallOptionsVisible());
+   }
+
    private void acceptIncomingCallOrUpgradeRequest(int videoState) {
      if (mCall == null) {
        LogUtil.e("BottomSheetHelper.acceptIncomingCallOrUpgradeRequest", "Call is null. Return");
@@ -691,6 +733,30 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
       modifyCallDialog.show();
     }
 
+    public void displayCancelModifyCallOptions() {
+      final InCallActivity inCallActivity = InCallPresenter.getInstance().getActivity();
+      if (inCallActivity == null) {
+        LogUtil.e("BottomSheetHelper.displayCancelModifyCallOptions", "inCallActivity is NULL");
+        return;
+      }
+      AlertDialog.Builder alertDialog = new AlertDialog.Builder(inCallActivity);
+      alertDialog.setTitle(R.string.cancel_modify_call_title);
+      alertDialog.setPositiveButton(R.string.cancel_upgrade, new DialogInterface.OnClickListener() {
+          @Override
+          public void onClick(DialogInterface dialog, int which) {
+            cancelUpgradeClicked(mCall);
+          }
+      } );
+      alertDialog.setNegativeButton(R.string.not_cancel, new DialogInterface.OnClickListener() {
+          @Override
+          public void onClick(DialogInterface dialog, int which) {
+            Log.d(this, "not cancel voice call upgrade to video");
+          }
+      } );
+      mCancelModifyCallDialog = alertDialog.create();
+      mCancelModifyCallDialog.show();
+    }
+
     /**
      * Sends a session modify request to the telephony framework
      */
@@ -700,6 +766,26 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
 
     public PrimaryCallTracker getPrimaryCallTracker() {
       return mPrimaryCallTracker;
+    }
+
+    /**
+      * Cancel the upgrade request.
+      */
+    private void cancelUpgradeClicked(DialerCall call) {
+      LogUtil.enterBlock("BottomSheetHelper.cancelUpgradeClicked");
+      if(call == null ) {
+        LogUtil.w("BottomSheetHelper.cancelUpgradeClicked", "call is null");
+        return;
+      }
+      try {
+        LogUtil.d("BottomSheetHelper.cancelUpgradeClicked",
+            "Sending cancel upgrade request with Phone id " + getPhoneId());
+        new QtiImsExtManager(mContext).sendCancelModifyCall(getPhoneId(),imsInterfaceListener);
+        mHasSentCancelUpgradeRequest = true;
+        maybeUpdateCancelModifyCallInMap();
+      } catch (QtiImsException e) {
+        LogUtil.e("BottomSheetHelper.cancelUpgradeClicked", "sendCancelModifyCall exception " + e);
+      }
     }
 
     /**
