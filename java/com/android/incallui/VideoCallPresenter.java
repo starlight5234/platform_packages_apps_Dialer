@@ -504,6 +504,11 @@ public class VideoCallPresenter
   @Override
   public void onCameraPermissionGranted() {
     LogUtil.i("VideoCallPresenter.onCameraPermissionGranted", "");
+    if (primaryCall == null) {
+      LogUtil.w("VideoCallPresenter.onCameraPermissionGranted",
+          "Primary call is null. Not enabling camera");
+      return;
+    }
     PermissionsUtil.setCameraPrivacyToastShown(context);
     enableCamera(primaryCall, isCameraRequired());
     showVideoUi(
