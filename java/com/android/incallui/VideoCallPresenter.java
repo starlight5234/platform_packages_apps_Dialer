@@ -400,6 +400,7 @@ public class VideoCallPresenter
       maybeUnsetPauseImage();
       updateCameraSelection(primaryCall);
     }
+    InCallPresenter.getInstance().enableScreenTimeout(true);
 
     isVideoCallScreenUiReady = false;
   }
@@ -999,7 +1000,7 @@ public class VideoCallPresenter
         false /* isRemotelyHeld */);
     enableCamera(primaryCall, false);
     InCallPresenter.getInstance().setFullScreen(false);
-    InCallPresenter.getInstance().enableScreenTimeout(false);
+    InCallPresenter.getInstance().enableScreenTimeout(true);
 
     if (primaryCall != null &&
         videoCall != null &&
