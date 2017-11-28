@@ -294,6 +294,9 @@ public class DialerCall implements VideoTechListener, StateChangedListener, Capa
               LogUtil.i("DialerCall.onConnectionEvent", "merge complete");
               isMergeInProcess = false;
               break;
+            case TelephonyManagerCompat.EVENT_SUPPLEMENTARY_SERVICE_NOTIFICATION:
+              notifySuplServiceMessage(extras);
+              break;
             default:
               break;
           }
@@ -422,6 +425,24 @@ public class DialerCall implements VideoTechListener, StateChangedListener, Capa
     LogUtil.enterBlock("DialerCall.notifyInternationalCallOnWifi");
     for (DialerCallListener dialerCallListener : mListeners) {
       dialerCallListener.onInternationalCallOnWifi();
+    }
+  }
+
+  public void notifySuplServiceMessage(Bundle extras) {
+    LogUtil.i("DialerCall.notifySuplServiceMessage", "");
+    if (extras == null) {
+      return;
+    }
+    String suplNotificationText = extras.getCharSequence(TelephonyManagerCompat
+            .EXTRA_NOTIFICATION_MESSAGE).toString();
+    if (TextUtils.isEmpty(suplNotificationText)) {
+      LogUtil.i("DialerCall.notifySuplServiceMessage",
+              "Supplementary service notification text empty");
+      return;
+    }
+
+    for (DialerCallListener listener : mListeners) {
+      listener.onSuplServiceMessage(suplNotificationText);
     }
   }
 

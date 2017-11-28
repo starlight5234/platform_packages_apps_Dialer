@@ -558,6 +558,9 @@ public class PictureModeHelper implements InCallDetailsListener,
     public void onWiFiToLteHandover(DialerCall call) {}
 
     @Override
+    public void onSuplServiceMessage(String suplNotificationMessage) {}
+
+    @Override
     public void onSessionModificationStateChange(DialerCall call) {}
 
     public void updateBlurredImageView(

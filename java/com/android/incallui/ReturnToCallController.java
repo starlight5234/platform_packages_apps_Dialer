@@ -153,6 +153,9 @@ public class ReturnToCallController implements InCallUiListener, Listener, Audio
   public void onInternationalCallOnWifi(@NonNull DialerCall call) {}
 
   @Override
+  public void onSuplServiceMessage(String suplNotificationMessage) {}
+
+  @Override
   public void onAudioStateChanged(CallAudioState audioState) {
     this.audioState = audioState;
     if (bubble != null) {

@@ -743,6 +743,9 @@ public class CallList implements DialerCallDelegate {
 
     /** Called when the user initiates a call to an international number while on WiFi. */
     void onInternationalCallOnWifi(@NonNull DialerCall call);
+
+    /** Called when there is a supplementary service notification  */
+    void onSuplServiceMessage(String suplNotificationMessage);
   }
 
   private class DialerCallListenerImpl implements DialerCallListener {
@@ -812,6 +815,13 @@ public class CallList implements DialerCallDelegate {
     public void onDialerCallSessionModificationStateChange() {
       for (Listener listener : mListeners) {
         listener.onSessionModificationStateChange(mCall);
+      }
+    }
+
+    @Override
+    public void onSuplServiceMessage(String suplNotificationMessage) {
+      for (Listener listener : mListeners) {
+        listener.onSuplServiceMessage(suplNotificationMessage);
       }
     }
   }

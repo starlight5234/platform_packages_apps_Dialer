@@ -641,6 +641,10 @@ public class InCallActivityCommon {
     call.setHasShownWiFiToLteHandoverToast();
   }
 
+  public void showSuplServiceMessageToast(String suplNotificationMessage) {
+      Toast.makeText(inCallActivity, suplNotificationMessage, Toast.LENGTH_LONG).show();
+  }
+
   public void showWifiFailedDialog(final DialerCall call) {
     if (call.showWifiHandoverAlertAsToast()) {
       LogUtil.i("InCallActivityCommon.showWifiFailedDialog", "as toast");

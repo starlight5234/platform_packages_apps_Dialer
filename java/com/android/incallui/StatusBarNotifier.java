@@ -1092,5 +1092,8 @@ public class StatusBarNotifier
         updateNotification(CallList.getInstance());
       }
     }
+
+    @Override
+    public void onSuplServiceMessage(String suplNotificationMessage) {}
   }
 }

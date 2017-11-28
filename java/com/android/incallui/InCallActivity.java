@@ -519,6 +519,10 @@ public class InCallActivity extends TransactionSafeFragmentActivity
     common.showInternationalCallOnWifiDialog(call);
   }
 
+  public void onSuplServiceMessage(String suplNotificationMessage) {
+    common.showSuplServiceMessageToast(suplNotificationMessage);
+  }
+
   public void hideMainInCallFragment() {
     LogUtil.i("InCallActivity.hideMainInCallFragment", "");
     if (didShowInCallScreen || didShowVideoCallScreen) {

@@ -144,6 +144,9 @@ public class InCallCsRedialHandler implements CallList.Listener {
         //NO-OP
     }
 
+    @Override
+    public void onSuplServiceMessage(String suplNotificationMessage) {}
+
     /**
      * This method overrides onDisconnect method of {@interface CallList.Listener}
      */

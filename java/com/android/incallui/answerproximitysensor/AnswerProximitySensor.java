@@ -149,6 +149,9 @@ public class AnswerProximitySensor
   public void onDialerCallSessionModificationStateChange() {}
 
   @Override
+  public void onSuplServiceMessage(String suplNotificationMessage) {}
+
+  @Override
   public void onScreenOn() {
     cleanup();
   }
