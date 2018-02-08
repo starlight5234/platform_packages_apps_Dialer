@@ -16,7 +16,7 @@
   -->
 <resources>
   <!-- Name of the main activity. -->
-  <string name="main_activity_label">Phone</string>
+  <string name="main_activity_label">QTI Phone</string>
 
   <!-- Name of launcher shortcut for the new UI main activity.
        TODO(38502365): Remove this once we're ready to launch the new UI. -->

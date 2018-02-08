@@ -144,8 +144,8 @@ public class QtiCallUtils {
         for (int i = 0; i < telephonyManager.getPhoneCount(); i++) {
             ImsManager imsMgr = ImsManager.getInstance(context, i);
             isEnhanced4gLteModeSettingEnabled |=
-                    imsMgr.isEnhanced4gLteModeSettingEnabledByUserForSlot();
-            isVolteEnabledByPlatform |= imsMgr.isVolteEnabledByPlatformForSlot();
+                    imsMgr.isEnhanced4gLteModeSettingEnabledByUser();
+            isVolteEnabledByPlatform |= imsMgr.isVolteEnabledByPlatform();
         }
         return isEnhanced4gLteModeSettingEnabled && isVolteEnabledByPlatform;
     }
@@ -166,8 +166,8 @@ public class QtiCallUtils {
                     "config_enable_conference_dialer")) {
                 ImsManager imsMgr = ImsManager.getInstance(context, i);
                 isEnhanced4gLteModeSettingEnabled |=
-                        imsMgr.isEnhanced4gLteModeSettingEnabledByUserForSlot();
-                isVolteEnabledByPlatform |= imsMgr.isVolteEnabledByPlatformForSlot();
+                        imsMgr.isEnhanced4gLteModeSettingEnabledByUser();
+                isVolteEnabledByPlatform |= imsMgr.isVolteEnabledByPlatform();
             }
         }
         return isEnhanced4gLteModeSettingEnabled && isVolteEnabledByPlatform;
@@ -219,8 +219,8 @@ public class QtiCallUtils {
             } else if (!isCarrierConfigEnabled) {
                 ImsManager imsMgr = ImsManager.getInstance(context, i);
                 isEnhanced4gLteModeSettingEnabled |=
-                        imsMgr.isEnhanced4gLteModeSettingEnabledByUserForSlot();
-                isVolteEnabledByPlatform |= imsMgr.isVolteEnabledByPlatformForSlot();
+                        imsMgr.isEnhanced4gLteModeSettingEnabledByUser();
+                isVolteEnabledByPlatform |= imsMgr.isVolteEnabledByPlatform();
             }
         }
         Log.i(LOG_TAG, "unregisteredSpecificImsPhoneCount = " + unregisteredSpecificImsPhoneCount);
