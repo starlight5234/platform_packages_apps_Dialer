@@ -19,7 +19,6 @@
 
   <application
     android:supportsRtl="true"
-    android:usesCleartextTraffic="true"
     android:defaultToDeviceProtectedStorage="true"
     android:directBootAware="true">
 
