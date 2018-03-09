@@ -96,7 +96,7 @@ public class DialerCall implements VideoTechListener, StateChangedListener, Capa
   * NOTE: Capability constant definition has been duplicated to avoid bundling the
   * Dialer with Frameworks. DON"T chage it without changing the framework value.
   */
-  public static final int CAPABILITY_ADD_PARTICIPANT = 0x01000000;
+  public static final int CAPABILITY_ADD_PARTICIPANT = 0x02000000;
 
   // Hard coded property for {@code Call}. Upstreamed change from Motorola.
   // TODO(b/35359461): Move it to Telecom in framework.
