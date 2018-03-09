@@ -40,6 +40,7 @@ import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.net.Uri;
 import android.os.Build.VERSION;
 import android.os.Build.VERSION_CODES;
 import android.os.Bundle;
@@ -52,6 +53,7 @@ import com.android.dialer.compat.ActivityCompat;
 import com.android.incallui.call.CallList;
 import com.android.incallui.call.DialerCall;
 import com.android.dialer.common.LogUtil;
+import com.android.dialer.util.CallUtil;
 import com.android.dialer.util.IntentUtil;
 import com.android.incallui.videotech.ims.ImsVideoTech;
 import com.android.incallui.videotech.utils.VideoUtils;
@@ -93,12 +95,6 @@ public class BottomSheetHelper implements InCallPresenter.InCallEventListener,
    /* QtiImsExtListenerBaseImpl instance to handle call deflection response */
    private QtiImsExtListenerBaseImpl imsInterfaceListener =
       new QtiImsExtListenerBaseImpl() {
-
-     /* Handles call deflect response */
-     @Override
-     public void receiveCallDeflectResponse(int phoneId, int result) {
-          LogUtil.w("BottomSheetHelper.receiveCallDeflectResponse:", "result = " + result);
-     }
 
      /* Handles call transfer response */
      @Override
@@ -448,9 +444,7 @@ public class BottomSheetHelper implements InCallPresenter.InCallEventListener,
 
    private void maybeUpdateDeflectInMap() {
      final boolean showDeflectCall =
-         QtiImsExtUtils.isCallDeflectionSupported(getPhoneId(), mContext) &&
-         (mCall.getState() == DialerCall.State.INCOMING ||
-         mCall.getState() == DialerCall.State.CALL_WAITING) &&
+         mCall.can(android.telecom.Call.Details.CAPABILITY_SUPPORT_DEFLECT) &&
          !mCall.isVideoCall() && !mCall.hasReceivedVideoUpgradeRequest();
      moreOptionsMap.put(mResources.getString(R.string.qti_description_target_deflect),
          showDeflectCall);
@@ -460,31 +454,28 @@ public class BottomSheetHelper implements InCallPresenter.InCallEventListener,
     * Deflect the incoming call.
     */
    private void deflectCall() {
-     LogUtil.enterBlock("BottomSheetHelper.onDeflect");
+     LogUtil.enterBlock("BottomSheetHelper.deflectCall");
      if(mCall == null ) {
-       LogUtil.w("BottomSheetHelper.onDeflect", "mCall is null");
+       LogUtil.w("BottomSheetHelper.deflectCall", "mCall is null");
        return;
      }
      String deflectCallNumber = QtiImsExtUtils.getCallDeflectNumber(
           mContext.getContentResolver());
      /* If not set properly, inform via Log */
      if (deflectCallNumber == null) {
-       LogUtil.w("BottomSheetHelper.onDeflect",
+       LogUtil.w("BottomSheetHelper.deflectCall",
             "Number not set. Provide the number via IMS settings and retry.");
        return;
      }
-     int phoneId = getPhoneId();
-     LogUtil.d("BottomSheetHelper.onDeflect", "mCall:" + mCall +
-          "deflectCallNumber:" + deflectCallNumber);
-     try {
-       LogUtil.d("BottomSheetHelper.onDeflect",
-            "Sending deflect request with Phone id " + phoneId +
-            " to " + deflectCallNumber);
-       new QtiImsExtManager(mContext).sendCallDeflectRequest(phoneId,
-            deflectCallNumber, imsInterfaceListener);
-     } catch (QtiImsException e) {
-       LogUtil.e("BottomSheetHelper.onDeflect", "sendCallDeflectRequest exception " + e);
+     Uri deflectCallNumberUri = CallUtil.getCallUri(deflectCallNumber);
+     if (deflectCallNumberUri == null) {
+       LogUtil.w("BottomSheetHelper.deflectCall", "Deflect number Uri is null.");
+       return;
      }
+
+     LogUtil.d("BottomSheetHelper.deflectCall", "mCall:" + mCall +
+          "deflectCallNumberUri: " + Log.pii(deflectCallNumberUri));
+     mCall.deflectCall(deflectCallNumberUri);
    }
 
    private int getCallTransferCapabilities() {

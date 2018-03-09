@@ -1138,6 +1138,11 @@ public class DialerCall implements VideoTechListener, StateChangedListener, Capa
     answer(mTelecomCall.getDetails().getVideoState());
   }
 
+  public void deflectCall(Uri address) {
+    LogUtil.i("DialerCall.deflectCall", "");
+    mTelecomCall.deflect(address);
+  }
+
   public void reject(boolean rejectWithMessage, String message) {
     LogUtil.i("DialerCall.reject", "");
     mTelecomCall.reject(rejectWithMessage, message);
