@@ -90,6 +90,20 @@ public class CallDetailsEntryViewHolder extends ViewHolder {
       CallTypeHelper callTypeHelper,
       boolean showMultimediaDivider) {
     int callType = entry.getCallType();
+    if ((entry.getFeatures() & Calls.FEATURES_HD_CALL) == Calls.FEATURES_HD_CALL) {
+      switch (callType) {
+        case Calls.INCOMING_TYPE :
+          callType = AppCompatConstants.INCOMING_IMS_TYPE;
+          break;
+        case Calls.OUTGOING_TYPE :
+          callType = AppCompatConstants.OUTGOING_IMS_TYPE;
+          break;
+        case Calls.MISSED_TYPE :
+          callType = AppCompatConstants.MISSED_IMS_TYPE;
+          break;
+        default:
+      }
+    }
     boolean isVideoCall = (entry.getFeatures() & Calls.FEATURES_VIDEO) == Calls.FEATURES_VIDEO;
     boolean isPulledCall =
         (entry.getFeatures() & Calls.FEATURES_PULLED_EXTERNALLY)
