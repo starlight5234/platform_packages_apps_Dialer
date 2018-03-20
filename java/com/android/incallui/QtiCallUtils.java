@@ -134,7 +134,8 @@ public class QtiCallUtils {
     * if true, conference dialer  is enabled.
     */
     public static boolean isConferenceUriDialerEnabled(Context context) {
-        if (!PermissionsUtil.hasPhonePermissions(context)) {
+        if (!PermissionsUtil.hasPhonePermissions(context) || !PermissionsUtil.hasPermission(
+            context, android.Manifest.permission.MODIFY_PHONE_STATE)) {
             return false;
         }
         boolean isEnhanced4gLteModeSettingEnabled = false;
@@ -154,7 +155,8 @@ public class QtiCallUtils {
     * if true, conference dialer is enabled.
     */
     public static boolean isConferenceDialerEnabled(Context context) {
-        if (!PermissionsUtil.hasPhonePermissions(context)) {
+        if (!PermissionsUtil.hasPhonePermissions(context) || !PermissionsUtil.hasPermission(
+            context, android.Manifest.permission.MODIFY_PHONE_STATE)) {
             return false;
         }
         boolean isEnhanced4gLteModeSettingEnabled = false;
@@ -174,17 +176,16 @@ public class QtiCallUtils {
     }
 
     /**
-    * Whether ims feature is connected (VoLTE/VT enable)
+    * Whether ims is registered
     * @param context of the activity.
     * @param int phoneId which need to check.
-    * @return boolean whether ims is connected (i.e. VoLTE/VT enable).
+    * @return boolean whether ims is registered.
     */
     private static boolean isImsConnected(Context context, int phoneId) {
         try {
-            //Check if specific ims phone has voice or vt in service
+            //Check if specific ims phone has ims registered
             final QtiImsExtManager qtiImsExtManager = new QtiImsExtManager(context);
-            return qtiImsExtManager.isConnected(phoneId, 1, 2) ||
-                    qtiImsExtManager.isConnected(phoneId, 1, 4);
+            return qtiImsExtManager.isImsRegistered(phoneId);
         } catch (QtiImsException e) {
             Log.e(LOG_TAG, "QtiImsException = " + e);
             return false;
@@ -198,7 +199,9 @@ public class QtiCallUtils {
     * @return boolean whether should show 4G conference dialer menu option.
     */
     public static boolean show4gConferenceDialerMenuOption(Context context) {
-        if (!PermissionsUtil.hasPhonePermissions(context) || hasConferenceCall()) {
+        if (!PermissionsUtil.hasPhonePermissions(context) || hasConferenceCall()
+            || !PermissionsUtil.hasPermission(context,
+            android.Manifest.permission.MODIFY_PHONE_STATE)) {
             return false;
         }
         int unregisteredSpecificImsPhoneCount = 0;
