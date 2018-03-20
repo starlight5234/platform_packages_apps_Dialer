@@ -15,11 +15,7 @@
 LOCAL_PATH:= $(call my-dir)
 include $(CLEAR_VARS)
 
-ifeq ($(TARGET_BUILD_APPS),)
-support_library_root_dir := frameworks/support
-else
 support_library_root_dir := prebuilts/sdk/current/support
-endif
 
 # The base directory for Dialer sources.
 BASE_DIR := java/com/android
