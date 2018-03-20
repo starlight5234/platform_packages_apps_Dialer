@@ -548,13 +548,25 @@ public class QtiCallUtils {
     }
 
     //Checks if DialerCall has video CRBT - an outgoing receive-only video call
-    public static boolean hasVideoCrbtVoLteCall(DialerCall call) {
+    public static boolean hasVideoCrbtVoLteCall(Context context, DialerCall call) {
+        if (context == null || !QtiImsExtUtils.isCarrierConfigEnabled(
+               BottomSheetHelper.getInstance().getPhoneId(),
+               context, "config_enable_video_crbt")) {
+            return false;
+        }
+
         return (call != null && call.getState() == DialerCall.State.DIALING
            && isVideoRxOnly(call));
     }
 
     //Checks if CallList has CRBT VoLTE call - an outgoing receive-only video call
-    public static boolean hasVideoCrbtVoLteCall() {
+    public static boolean hasVideoCrbtVoLteCall(Context context) {
+        if (context == null || !QtiImsExtUtils.isCarrierConfigEnabled(
+               BottomSheetHelper.getInstance().getPhoneId(),
+               context, "config_enable_video_crbt")) {
+            return false;
+        }
+
         DialerCall call = CallList.getInstance().getFirstCall();
         return (call != null && call.getState() == DialerCall.State.DIALING
            && isVideoRxOnly(call));
@@ -567,8 +579,8 @@ public class QtiCallUtils {
         boolean videoCrbtConfig = QtiImsExtUtils.isCarrierConfigEnabled(
                 BottomSheetHelper.getInstance().getPhoneId(),
                 context, "config_enable_video_crbt");
-        return (call != null && call.getState() == DialerCall.State.DIALING
-                && isVideoBidirectional(call) && videoCrbtConfig);
+        return (videoCrbtConfig && call != null && call.getState() == DialerCall.State.DIALING
+                && isVideoBidirectional(call));
     }
 
     //Checks if CallList has conference call

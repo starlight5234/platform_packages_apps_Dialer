@@ -784,7 +784,7 @@ public class VideoCallFragment extends Fragment
     }
 
     maybeLoadPreConfiguredImageAsync();
-    if (QtiCallUtils.hasVideoCrbtVoLteCall() && !shouldShowPreview) {
+    if (QtiCallUtils.hasVideoCrbtVoLteCall(getContext()) && !shouldShowPreview) {
       previewTextureView.setVisibility(View.GONE);
     }
   }
