@@ -846,6 +846,11 @@ public class InCallActivityCommon {
       }
 
       dismissKeyguard(true);
+
+      if (dialog != null && dialog.isShowing()) {
+        dialog.dismiss();
+        dialog = null;
+      }
     }
 
     boolean didShowAccountSelectionDialog = maybeShowAccountSelectionDialog();
