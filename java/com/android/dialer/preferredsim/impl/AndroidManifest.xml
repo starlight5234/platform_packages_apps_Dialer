@@ -19,7 +19,7 @@
   <application>
 
     <provider
-        android:authorities="com.android.dialer.preferredsimfallback"
+        android:authorities="org.codeaurora.dialer.preferredsimfallback"
         android:exported="true"
         android:multiprocess="false"
         android:name=".PreferredSimFallbackProvider"
