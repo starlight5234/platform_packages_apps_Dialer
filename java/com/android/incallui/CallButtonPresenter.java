@@ -602,6 +602,10 @@ public class CallButtonPresenter
   }
 
   @Override
+  public void onOutgoingVideoSourceChanged(int videoSource) {
+  }
+
+  @Override
   public void onSessionModificationStateChange(DialerCall call) {
     if (inCallButtonUi != null && call != null && call.equals(this.call)) {
       int sessionModifyState = call.getVideoTech().getSessionModificationState();

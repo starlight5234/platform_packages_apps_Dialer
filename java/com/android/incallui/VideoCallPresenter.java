@@ -19,7 +19,11 @@ package com.android.incallui;
 import android.app.Activity;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
+import android.hardware.display.DisplayManager;
+import android.hardware.display.VirtualDisplay;
 import android.graphics.Point;
+import android.media.projection.MediaProjection;
+import android.media.projection.MediaProjectionManager;
 import android.net.Uri;
 import android.os.Handler;
 import android.support.annotation.NonNull;
@@ -28,6 +32,7 @@ import android.telecom.Connection.VideoProvider;
 import android.telecom.InCallService.VideoCall;
 import android.telecom.VideoProfile;
 import android.telecom.VideoProfile.CameraCapabilities;
+import android.util.DisplayMetrics;
 import android.view.Surface;
 import android.view.SurfaceView;
 import com.android.dialer.common.Assert;
@@ -55,6 +60,11 @@ import com.android.incallui.videotech.utils.SessionModificationState;
 import com.android.incallui.videotech.utils.VideoUtils;
 import java.util.Objects;
 
+import org.codeaurora.ims.ImsScreenShareListenerBase;
+import org.codeaurora.ims.ImsScreenShareManager;
+import org.codeaurora.ims.QtiImsException;
+import org.codeaurora.ims.QtiImsExtConnector;
+import org.codeaurora.ims.QtiImsExtManager;
 import org.codeaurora.ims.utils.QtiImsExtUtils;
 
 /**
@@ -145,6 +155,13 @@ public class VideoCallPresenter
   // Holds TRUE if static image needs to be transmitted instead of video preview stream
   private static boolean sShallTransmitStaticImage = false;
 
+  // Screen Share Query
+  private static final int NO_PENDING_REQUEST = -1;
+  private static final int REQUEST_TO_START = 0;
+  private static final int REQUEST_TO_STOP = 1;
+
+  private static int mScreenShareQuery = NO_PENDING_REQUEST;
+
   private static PictureModeHelper mPictureModeHelper;
 
   /**
@@ -180,9 +197,71 @@ public class VideoCallPresenter
       };
 
   private boolean isVideoCallScreenUiReady;
+  private VirtualDisplay mVirtualDisplay = null;
+  private ImsScreenShareManager mImsScreenShareManager = null;
+  private int mDisplayDpi;
+  private MediaProjection mMediaProjection;
+  private QtiImsExtConnector mQtiImsExtConnector;
+  private QtiImsExtManager mQtiImsExtManager = null;
+
+  /* ImsScreenShareListenerBase instance to handle screen share response */
+  private ImsScreenShareListenerBase mImsScreenShareListener =
+      new ImsScreenShareListenerBase() {
+
+     /* Handle screen share response */
+     @Override
+     public void onRecordingSurfaceChanged(int phoneId, Surface surface, int width, int height) {
+       LogUtil.i("VideoCallPresenter.onRecordingSurfaceChanged", "surface: " + surface);
+       if (mScreenShareQuery == REQUEST_TO_START && surface != null) {
+         setupVirtualDisplay(width, height, surface);
+       } else if (mScreenShareQuery == REQUEST_TO_STOP && surface == null) {
+         ScreenShareHelper.onPermissionChanged(null);
+         enableCamera(primaryCall, isCameraRequired());
+         clearScreenShareStates();
+       } else {
+         LogUtil.e("VideoCallPresenter.processRecordingSurfaceChanged",
+         "mismatch in expected surface from lower layer");
+       }
+       mScreenShareQuery = NO_PENDING_REQUEST;
+     }
+  };
+
+  private void maybeCreateQtiImsExtConnector(Context context) {
+    try {
+      mQtiImsExtConnector = new QtiImsExtConnector(context,
+          new QtiImsExtConnector.IListener() {
+            @Override
+            public void onConnectionAvailable(QtiImsExtManager qtiImsExtManager) {
+              mQtiImsExtManager = qtiImsExtManager;
+              setScreenShareListener();
+            }
+            @Override
+            public void onConnectionUnavailable() {
+              mQtiImsExtManager = null;
+            }
+          });
+      mQtiImsExtConnector.connect();
+    } catch (QtiImsException e) {
+      LogUtil.e("BottomSheetHelper.createQtiImsExtConnector",
+          "Unable to create QtiImsExtConnector");
+    }
+  }
+
+  private void setupVirtualDisplay(int width, int height, Surface surface) {
+    LogUtil.i("VideoCallPresenter.setupVirtualDisplay", " width: " + width + " height: " + height);
+      if (ScreenShareHelper.getProjectionManager() != null) {
+        mMediaProjection = ScreenShareHelper.getProjectionManager().getMediaProjection(
+                               Activity.RESULT_OK,
+                               ScreenShareHelper.getPermission());
+        mVirtualDisplay = mMediaProjection.createVirtualDisplay("ScreenCapture", width, height,
+                              mDisplayDpi, DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
+                              surface, null, null);
+     }
+   }
 
   private boolean isCameraRequired(int videoState, int sessionModificationState) {
     return !shallTransmitStaticImage() &&
+        !ScreenShareHelper.screenShareRequested() &&
         !isModifyToVideoRxType(primaryCall) &&
         (VideoProfile.isBidirectional(videoState)
         || VideoProfile.isTransmissionEnabled(videoState)
@@ -703,6 +782,104 @@ public class VideoCallPresenter
   }
 
   @Override
+  public void onOutgoingVideoSourceChanged(int videoSource) {
+    LogUtil.i("VideoCallPresenter.onOutgoingVideoSourceChanged",
+        " videoSource = " + videoSource);
+    if (videoSource == ScreenShareHelper.SCREEN) {
+      if (primaryCall == null) {
+        LogUtil.d("VideoCallPresenter.onOutgoingVideoSourceChanged",
+            "primaryCall is null");
+        return;
+      }
+      if (primaryCall.isVideoCall()) {
+        enterScreenShare();
+      }
+    } else {
+      exitScreenShare();
+    }
+  }
+
+  private void enterScreenShare() {
+    LogUtil.i("VideoCallPresenter.enterScreenShare", "enter screen share");
+    if (mQtiImsExtConnector == null) {
+      maybeCreateQtiImsExtConnector(context);
+    }
+    enableCamera(primaryCall, false);
+  }
+
+  private void setScreenShareListener() {
+     if (mQtiImsExtManager == null) {
+       LogUtil.i("VideoCallPresenter.setScreenShareListener",
+           "mQtiImsExtManager is null");
+       return;
+     }
+     try {
+       mImsScreenShareManager = mQtiImsExtManager.createImsScreenShareManager(
+           BottomSheetHelper.getInstance().getPhoneId());
+     } catch (QtiImsException e) {
+       LogUtil.e("VideoCallPresenter.setScreenShareListener", "exception " + e);
+     }
+     try {
+       LogUtil.i("VideoCallPresenter.setScreenShareListener", "setScreenShareListener");
+       mImsScreenShareManager.setScreenShareListener(mImsScreenShareListener);
+       startScreenShare();
+     } catch (QtiImsException e) {
+       LogUtil.e("VideoCallPresenter.setScreenShareListener", "exception " + e);
+     }
+   }
+
+   /**
+    * Start Screen Share by requesting pre configured
+    * Surface from vendor,
+    * if a valid Surface is returned via callback
+    * onRecordingSurfaceChanged(), UI tries to
+    * setup virtual display.
+    */
+   private void startScreenShare() {
+     DisplayMetrics metrics = new DisplayMetrics();
+     Activity activity = videoCallScreen.getVideoCallScreenFragment().getActivity();
+     if (activity == null) {
+       LogUtil.w("VideoCallPresenter.startScreenShare", "activity is null");
+       return;
+     }
+     activity.getWindowManager().getDefaultDisplay().getMetrics(metrics);
+     mDisplayDpi = metrics.densityDpi;
+     try {
+       if (mImsScreenShareManager == null) {
+         LogUtil.i("VideoCallPresenter.startScreenShare",
+             "mImsScreenShareManager is null");
+         return;
+       }
+       LogUtil.i("VideoCallPresenter.startScreenShare", "startScreenShare");
+       mImsScreenShareManager.startScreenShare(metrics.widthPixels, metrics.heightPixels);
+       mScreenShareQuery = REQUEST_TO_START;
+     } catch (QtiImsException e) {
+       LogUtil.e("VideoCallPresenter.startScreenShare", "exception " + e);
+       clearScreenShareStates();
+     }
+  }
+
+  /**
+   * Stop Screen Share if a null Surface is returned
+   * via callback onRecordingSurfaceChanged().
+   */
+  private void exitScreenShare() {
+     try {
+       if (mImsScreenShareManager == null) {
+         LogUtil.i("VideoCallPresenter.exitScreenShare",
+             "mImsScreenShareManager is null");
+         return;
+       }
+       LogUtil.i("VideoCallPresenter.stopScreenShare", "stopScreenShare");
+       mImsScreenShareManager.stopScreenShare();
+       mScreenShareQuery = REQUEST_TO_STOP;
+     } catch (QtiImsException e) {
+       LogUtil.e("VideoCallPresenter.stopScreenShare", "exception " + e);
+       clearScreenShareStates();
+     }
+  }
+
+  @Override
   public void onReadStoragePermissionResponse(boolean isGranted) {
     LogUtil.d("VideoCallPresenter.onReadStoragePermissionResponse"," granted = " + isGranted);
 
@@ -816,6 +993,11 @@ public class VideoCallPresenter
 
       checkForOrientationAllowedChange(newPrimaryCall);
       updateCameraSelection(newPrimaryCall);
+
+      if (ScreenShareHelper.screenShareRequested()) {
+        LogUtil.i("VideoCallPresenter.onPrimaryCallChanged", "starting screen share");
+        enterScreenShare();
+      }
 
       // Existing call is put on hold and new call is in incoming state does mean that
       // user is trying to answer the call
@@ -1094,6 +1276,10 @@ public class VideoCallPresenter
     checkForOrientationAllowedChange(primaryCall);
     InCallPresenter.getInstance().enableScreenTimeout(true);
 
+    if (ScreenShareHelper.screenShareRequested()) {
+        clearScreenShareStates();
+    }
+
     if (primaryCall != null &&
         videoCall != null &&
         QtiImsExtUtils.shallTransmitStaticImage(
@@ -1105,6 +1291,25 @@ public class VideoCallPresenter
     }
 
     isVideoMode = false;
+  }
+
+  private void clearScreenShareStates() {
+    ScreenShareHelper.onPermissionChanged(null);
+    mScreenShareQuery = NO_PENDING_REQUEST;
+    mImsScreenShareManager = null;
+    if (mVirtualDisplay != null) {
+        mVirtualDisplay.release();
+        mVirtualDisplay = null;
+    }
+    if (mMediaProjection != null) {
+        mMediaProjection.stop();
+        mMediaProjection = null;
+    }
+    if (mQtiImsExtConnector != null) {
+      mQtiImsExtConnector.disconnect();
+      mQtiImsExtConnector = null;
+      mQtiImsExtManager = null;
+    }
   }
 
   /**

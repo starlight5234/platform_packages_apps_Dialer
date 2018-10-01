@@ -16,12 +16,14 @@
 
 package com.android.incallui;
 
+import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.ActivityManager.AppTask;
 import android.app.ActivityManager.TaskDescription;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.KeyguardManager;
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
@@ -273,6 +275,18 @@ public class InCallActivity extends TransactionSafeFragmentActivity
     MetricsComponent.get(this)
         .metrics()
         .stopTimer(Metrics.ON_CALL_ADDED_TO_ON_INCALL_UI_SHOWN_OUTGOING);
+  }
+
+  public void onActivityResult(int requestCode, int resultCode, Intent data) {
+    Log.i("InCallActivity.onActivityResult", " requestCode = " + requestCode +
+            " resultCode = " + resultCode + " data = " + data);
+    if (requestCode == ScreenShareHelper.REQUEST_MEDIA_PROJECTION &&
+        resultCode == Activity.RESULT_OK) {
+      LogUtil.i("InCallActivity.onActivityResult", "starting screen sharing");
+      ScreenShareHelper.onPermissionChanged((Intent) data.clone());
+      InCallPresenter.getInstance().notifyOutgoingVideoSourceChanged(
+          ScreenShareHelper.SCREEN);
+    }
   }
 
   private void setWindowFlags() {

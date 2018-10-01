@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2018, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2017-2019, The Linux Foundation. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -433,6 +433,13 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
     }
 
     @Override
+    public void onOutgoingVideoSourceChanged(int videoSource) {
+      if (videoSource == ScreenShareHelper.SCREEN && !mCall.isVideoCall()) {
+        changeToVideoClicked(mCall, VideoProfile.STATE_TX_ENABLED);
+      }
+    }
+
+    @Override
     public void onSessionModificationStateChange(DialerCall call) {
       //No-op
     }
@@ -718,16 +725,28 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
         itemToCallType.add(VideoProfile.STATE_RX_ENABLED);
       }
 
-      if (QtiCallUtils.hasTransmitVideoCapabilities(mCall) && !QtiCallUtils.isVideoTxOnly(mCall)) {
+      if (QtiCallUtils.hasTransmitVideoCapabilities(mCall)
+          && (!QtiCallUtils.isVideoTxOnly(mCall)
+          || ScreenShareHelper.screenShareRequested())) {
         items.add(mResources.getText(R.string.modify_call_option_vt_tx));
         itemToCallType.add(VideoProfile.STATE_TX_ENABLED);
       }
 
       if (QtiCallUtils.hasReceiveVideoCapabilities(mCall)
           && QtiCallUtils.hasTransmitVideoCapabilities(mCall)
-          && !QtiCallUtils.isVideoBidirectional(mCall)) {
+          && (!QtiCallUtils.isVideoBidirectional(mCall)
+          || ScreenShareHelper.screenShareRequested())) {
         items.add(mResources.getText(R.string.modify_call_option_vt));
         itemToCallType.add(VideoProfile.STATE_BIDIRECTIONAL);
+      }
+
+      if (canDisplayScreenShareButton() &&
+          mCall.getState() == DialerCallState.ACTIVE &&
+          QtiCallUtils.hasTransmitVideoCapabilities(mCall)
+          && !ScreenShareHelper.screenShareRequested()
+          && !QtiCallUtils.isVideoRxOnly(mCall)) {
+        items.add(mResources.getText(R.string.modify_call_option_screen_share));
+        itemToCallType.add(ScreenShareHelper.VIDEO_SCREEN_SHARE);
       }
 
       AlertDialog.Builder builder = new AlertDialog.Builder(inCallActivity);
@@ -736,10 +755,34 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
       DialogInterface.OnClickListener listener = new DialogInterface.OnClickListener() {
           @Override
           public void onClick(DialogInterface dialog, int item) {
-            final int selCallType = itemToCallType.get(item);
+            final int setCallType = itemToCallType.get(item);
+            if (setCallType == ScreenShareHelper.VIDEO_SCREEN_SHARE) {
+              ScreenShareHelper.requestScreenSharePermission();
+              dialog.dismiss();
+              return;
+            }
+
+            if (ScreenShareHelper.screenShareRequested()) {
+              if (mCall.getVideoState() == setCallType) {
+                InCallPresenter.getInstance().notifyOutgoingVideoSourceChanged(
+                    ScreenShareHelper.CAMERA);
+                dialog.dismiss();
+                return;
+              }
+              if (setCallType != VideoProfile.STATE_AUDIO_ONLY
+                  && setCallType != VideoProfile.STATE_RX_ENABLED) {
+                InCallPresenter.getInstance().notifyOutgoingVideoSourceChanged(
+                    ScreenShareHelper.CAMERA);
+              } else if (setCallType == VideoProfile.STATE_RX_ENABLED ||
+                         setCallType == VideoProfile.STATE_AUDIO_ONLY) {
+                InCallPresenter.getInstance().notifyOutgoingVideoSourceChanged(
+                    ScreenShareHelper.NONE);
+              }
+            }
+
             Log.v(this, "Videocall: ModifyCall: upgrade/downgrade to "
-                + QtiCallUtils.callTypeToString(selCallType));
-            changeToVideoClicked(mCall, selCallType);
+                + QtiCallUtils.callTypeToString(setCallType));
+            changeToVideoClicked(mCall, setCallType);
             dialog.dismiss();
           }
       };
@@ -818,5 +861,10 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
     public boolean canDisablePipMode() {
       return (Settings.Global.getInt(
          mContext.getContentResolver(), "disable_pip_mode", 0) != 0);
+    }
+
+    private boolean canDisplayScreenShareButton() {
+      return Settings.Global.getInt(mContext.getContentResolver(),
+          "enable_screen_share", 0) == 1;
     }
 }

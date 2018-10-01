@@ -1080,6 +1080,11 @@ public class CallCardPresenter
     //No-op
   }
 
+  @Override
+  public void onOutgoingVideoSourceChanged(int videoSource) {
+    //No-op
+  }
+
   private boolean isPrimaryCallActive() {
     return primary != null && primary.getState() == DialerCallState.ACTIVE;
   }

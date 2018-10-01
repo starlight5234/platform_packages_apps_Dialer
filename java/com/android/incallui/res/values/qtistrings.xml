@@ -145,6 +145,7 @@ IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <string name="modify_call_option_vt_tx" translatable="false">Video Transmit</string>
     <string name="modify_call_option_vt_rx" translatable="false">Video Receive</string>
     <string name="modify_call_option_voice" translatable="false">Voice Only</string>
+    <string name="modify_call_option_screen_share" translatable="false">Screen Sharing</string>
     <string name="cancel_modify_call_title">Cancel modify call?</string>
     <string name="cancel_upgrade">Cancel Upgrade</string>
     <string name="not_cancel">Not Cancel</string>

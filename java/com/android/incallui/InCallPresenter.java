@@ -1490,6 +1490,12 @@ public class InCallPresenter implements CallList.Listener, AudioModeProvider.Aud
     }
   }
 
+    public void notifyOutgoingVideoSourceChanged(int videoSource) {
+      for (InCallEventListener listener : inCallEventListeners) {
+          listener.onOutgoingVideoSourceChanged(videoSource);
+      }
+    }
+
   /**
    * Called by the {@link BottomSheetHelper} to inform of a change in hide me selection.
    *
@@ -2034,6 +2040,7 @@ public class InCallPresenter implements CallList.Listener, AudioModeProvider.Aud
     void onSessionModificationStateChange(DialerCall call);
     void onFullscreenModeChanged(boolean isFullscreenMode);
     void onSendStaticImageStateChanged(boolean isEnabled);
+    void onOutgoingVideoSourceChanged(int videoSource);
   }
 
   public interface InCallUiListener {
