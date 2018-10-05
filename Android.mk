@@ -133,6 +133,7 @@ LOCAL_STATIC_JAVA_LIBRARIES := \
 	libbackup \
 	libphonenumber \
 	volley \
+	ims-ext-common
 
 LOCAL_STATIC_ANDROID_LIBRARIES := \
 	android-support-core-ui \
@@ -171,8 +172,8 @@ LOCAL_PROGUARD_FLAG_FILES := proguard.flags $(call all-named-files-under,proguar
 #LOCAL_PROGUARD_ENABLED += optimization
 
 LOCAL_PROGUARD_ENABLED := disabled
-LOCAL_SDK_VERSION := system_current
 LOCAL_MODULE_TAGS := optional
+LOCAL_PRIVATE_PLATFORM_APIS := true
 LOCAL_PACKAGE_NAME := QtiDialer
 LOCAL_CERTIFICATE := shared
 LOCAL_PRIVILEGED_MODULE := true
