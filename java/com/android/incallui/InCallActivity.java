@@ -550,6 +550,7 @@ public class InCallActivity extends TransactionSafeFragmentActivity
     if (errorDialog != null) {
       errorDialog.dismiss();
     }
+    InCallCsRedialHandler.getInstance().dismissPendingDialogs();
 
     if (isFinishing()) {
       InCallPresenter.getInstance().unsetActivity(this);
@@ -1042,6 +1043,8 @@ public class InCallActivity extends TransactionSafeFragmentActivity
       selectPhoneAccountDialogFragment.dismiss();
       selectPhoneAccountDialogFragment = null;
     }
+
+    InCallCsRedialHandler.getInstance().dismissPendingDialogs();
 
     // Dismiss the dialog for international call on WiFi
     InternationalCallOnWifiDialogFragment internationalCallOnWifiFragment =

@@ -388,6 +388,7 @@ public class InCallPresenter implements CallList.Listener, AudioModeProvider.Aud
     activeCallsListener = new ActiveCallsCallListListener(context);
     this.callList.addListener(activeCallsListener);
 
+    InCallCsRedialHandler.getInstance().setUp(context);
     VideoPauseController.getInstance().setUp(this);
 
     filteredQueryHandler = filteredNumberQueryHandler;
@@ -1648,6 +1649,8 @@ public class InCallPresenter implements CallList.Listener, AudioModeProvider.Aud
       }
       statusBarNotifier = null;
       BottomSheetHelper.getInstance().tearDown();
+
+      InCallCsRedialHandler.getInstance().tearDown();
 
       if (callList != null) {
         callList.removeListener(this);
