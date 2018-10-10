@@ -33,6 +33,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -40,6 +41,7 @@ import android.telecom.Call.Details;
 import android.view.View;
 
 import com.android.dialer.common.LogUtil;
+import com.android.dialer.util.CallUtil;
 import com.android.incallui.call.DialerCall;
 import com.android.incallui.call.state.DialerCallState;
 import com.android.incallui.videotech.utils.VideoUtils;
@@ -113,6 +115,7 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
      if (mCall != null && moreOptionsMap != null && mResources != null) {
        maybeUpdateManageConferenceInMap();
        maybeUpdateHideMeInMap();
+       maybeUpdateDeflectInMap();
      }
    }
 
@@ -170,7 +173,10 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
      } else if (text.equals(mResources.getString(R.string.qti_ims_hideMeText_unselected)) ||
          text.equals(mResources.getString(R.string.qti_ims_hideMeText_selected))) {
        hideMeClicked(text.equals(mResources.getString(R.string.qti_ims_hideMeText_unselected)));
+     } else if (text.equals(mResources.getString(R.string.qti_description_target_deflect))) {
+       deflectCall();
      }
+
      moreOptionsSheet = null;
    }
 
@@ -319,5 +325,41 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
      }
 
      inCallActivity.showConferenceFragment(true);
+   }
+
+   private void maybeUpdateDeflectInMap() {
+     final boolean showDeflectCall =
+         mCall.can(android.telecom.Call.Details.CAPABILITY_SUPPORT_DEFLECT) &&
+         !mCall.isVideoCall() && !mCall.hasReceivedVideoUpgradeRequest();
+     moreOptionsMap.put(mResources.getString(R.string.qti_description_target_deflect),
+         showDeflectCall);
+   }
+
+   /**
+    * Deflect the incoming call.
+    */
+   private void deflectCall() {
+     LogUtil.enterBlock("BottomSheetHelper.deflectCall");
+     if(mCall == null ) {
+       LogUtil.w("BottomSheetHelper.deflectCall", "mCall is null");
+       return;
+     }
+     String deflectCallNumber = QtiImsExtUtils.getCallDeflectNumber(
+          mContext.getContentResolver());
+     /* If not set properly, inform via Log */
+     if (deflectCallNumber == null) {
+       LogUtil.w("BottomSheetHelper.deflectCall",
+            "Number not set. Provide the number via IMS settings and retry.");
+       return;
+     }
+     Uri deflectCallNumberUri = CallUtil.getCallUri(deflectCallNumber);
+     if (deflectCallNumberUri == null) {
+       LogUtil.w("BottomSheetHelper.deflectCall", "Deflect number Uri is null.");
+       return;
+     }
+
+     LogUtil.d("BottomSheetHelper.deflectCall", "mCall:" + mCall +
+          "deflectCallNumberUri: " + Log.pii(deflectCallNumberUri));
+     mCall.deflectCall(deflectCallNumberUri);
    }
 }

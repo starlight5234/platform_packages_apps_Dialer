@@ -39,6 +39,7 @@ IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <string name="cs_redial_yes">Yes</string>
     <!-- No option of the IMS to CS redial dialog -->
     <string name="cs_redial_no">No</string>
+    <string name="qti_description_target_deflect">Call Deflect</string>
 
     <string name="qti_ims_hideMeText_unselected">Hide Me</string>
     <string name="qti_ims_hideMeText_selected">Show Me</string>
@@ -58,10 +59,15 @@ IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
        <item>@string/qti_ims_hideMeText_unselected</item>
        <item>false</item>
     </string-array>
+    <string-array name="deflect">
+       <item>@string/qti_description_target_deflect</item>
+       <item>false</item>
+    </string-array>
 
     <!-- array of all the options to ensure mapping-->
     <array name="bottom_sheet_more_options">
        <item>@array/manageConference</item>
        <item>@array/hide_me</item>
+       <item>@array/deflect</item>
     </array>
 </resources>
