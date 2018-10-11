@@ -1035,6 +1035,11 @@ public class CallCardPresenter
     maybeShowManageConferenceCallButton();
   }
 
+  @Override
+  public void onSendStaticImageStateChanged(boolean isEnabled) {
+    //No-op
+  }
+
   private boolean isPrimaryCallActive() {
     return primary != null && primary.getState() == DialerCallState.ACTIVE;
   }

@@ -716,6 +716,10 @@ public class SurfaceViewVideoCallFragment extends Fragment
   }
 
   @Override
+  public void onRequestReadStoragePermission() {
+  }
+
+  @Override
   @NonNull
   public String getCallId() {
     return Assert.isNotNull(getArguments().getString(ARG_CALL_ID));

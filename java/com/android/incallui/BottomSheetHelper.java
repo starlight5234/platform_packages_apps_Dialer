@@ -42,6 +42,7 @@ import android.view.View;
 import com.android.dialer.common.LogUtil;
 import com.android.incallui.call.DialerCall;
 import com.android.incallui.call.state.DialerCallState;
+import com.android.incallui.videotech.utils.VideoUtils;
 
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
@@ -50,10 +51,12 @@ import org.codeaurora.ims.QtiCallConstants;
 import org.codeaurora.ims.utils.QtiCallUtils;
 import org.codeaurora.ims.utils.QtiImsExtUtils;
 
-public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeListener {
+public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeListener,
+        InCallPresenter.InCallEventListener{
 
    private ConcurrentHashMap<String,Boolean> moreOptionsMap;
    private ExtBottomSheetFragment moreOptionsSheet;
+   private boolean mIsHideMe = false;
    private Context mContext;
    private DialerCall mCall;
    private PrimaryCallTracker mPrimaryCallTracker;
@@ -80,6 +83,7 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
      mPrimaryCallTracker = new PrimaryCallTracker();
      InCallPresenter.getInstance().addListener(mPrimaryCallTracker);
      InCallPresenter.getInstance().addIncomingCallListener(mPrimaryCallTracker);
+     InCallPresenter.getInstance().addInCallEventListener(this);
      mPrimaryCallTracker.addListener(this);
    }
 
@@ -87,10 +91,12 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
      LogUtil.d("BottomSheetHelper","tearDown");
      InCallPresenter.getInstance().removeListener(mPrimaryCallTracker);
      InCallPresenter.getInstance().removeIncomingCallListener(mPrimaryCallTracker);
+     InCallPresenter.getInstance().removeInCallEventListener(this);
      if (mPrimaryCallTracker != null) {
        mPrimaryCallTracker.removeListener(this);
        mPrimaryCallTracker = null;
      }
+     mIsHideMe = false;
      mContext = null;
      mResources = null;
      moreOptionsMap = null;
@@ -106,6 +112,7 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
 
      if (mCall != null && moreOptionsMap != null && mResources != null) {
        maybeUpdateManageConferenceInMap();
+       maybeUpdateHideMeInMap();
      }
    }
 
@@ -160,6 +167,9 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
      LogUtil.d("BottomSheetHelper.optionSelected","text : " + text);
      if (text.equals(mResources.getString(R.string.manageConferenceLabel))) {
        manageConferenceCall();
+     } else if (text.equals(mResources.getString(R.string.qti_ims_hideMeText_unselected)) ||
+         text.equals(mResources.getString(R.string.qti_ims_hideMeText_selected))) {
+       hideMeClicked(text.equals(mResources.getString(R.string.qti_ims_hideMeText_unselected)));
      }
      moreOptionsSheet = null;
    }
@@ -213,6 +223,49 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
      }
    }
 
+   private void maybeUpdateHideMeInMap() {
+     if (!QtiImsExtUtils.shallShowStaticImageUi(getPhoneId(), mContext) ||
+         !VideoUtils.hasCameraPermissionAndShownPrivacyToast(mContext)) {
+       return;
+     }
+
+     LogUtil.v("BottomSheetHelper.maybeUpdateHideMeInMap", " mIsHideMe = " + mIsHideMe);
+     String hideMeText = mIsHideMe ? mResources.getString(R.string.qti_ims_hideMeText_selected) :
+         mResources.getString(R.string.qti_ims_hideMeText_unselected);
+     moreOptionsMap.put(hideMeText, mCall.isVideoCall()
+         && mCall.getState() == DialerCallState.ACTIVE
+         && !mCall.hasReceivedVideoUpgradeRequest());
+   }
+
+   /**
+    * Handles click on hide me button
+    * @param isHideMe True if user selected hide me option else false
+    */
+   private void hideMeClicked(boolean isHideMe) {
+     LogUtil.d("BottomSheetHelper.hideMeClicked", " isHideMe = " + isHideMe);
+     mIsHideMe = isHideMe;
+     if (isHideMe) {
+       // Replace "Hide Me" string with "Show Me"
+       moreOptionsMap.remove(mResources.getString(R.string.qti_ims_hideMeText_unselected));
+       moreOptionsMap.put(mResources.getString(R.string.qti_ims_hideMeText_selected), isHideMe);
+     } else {
+       // Replace "Show Me" string with "Hide Me"
+       moreOptionsMap.remove(mResources.getString(R.string.qti_ims_hideMeText_selected));
+       moreOptionsMap.put(mResources.getString(R.string.qti_ims_hideMeText_unselected), !isHideMe);
+     }
+
+     /* Click on hideme shall change the static image state i.e. decision
+        is made in VideoCallPresenter whether to replace preview video with
+        static image or whether to resume preview video streaming */
+     InCallPresenter.getInstance().notifyStaticImageStateChanged(isHideMe);
+   }
+
+   // Returns TRUE if UE is in hide me mode else returns FALSE
+   public boolean isHideMeSelected() {
+     LogUtil.v("BottomSheetHelper.isHideMeSelected", "mIsHideMe: " + mIsHideMe);
+     return mIsHideMe;
+   }
+
    private int getPhoneIdExtra(DialerCall call) {
      final Bundle extras = call.getExtras();
      return ((extras == null) ? QtiCallConstants.INVALID_PHONE_ID :
@@ -240,6 +293,16 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
      LogUtil.d("BottomSheetHelper.getPhoneId", "phoneId : " + phoneId);
      return phoneId;
    }
+
+    @Override
+    public void onFullscreenModeChanged(boolean isFullscreenMode) {
+      //No-op
+    }
+
+    @Override
+    public void onSendStaticImageStateChanged(boolean isEnabled) {
+      //No-op
+    }
 
     @Override
     public void onPrimaryCallChanged(DialerCall call) {

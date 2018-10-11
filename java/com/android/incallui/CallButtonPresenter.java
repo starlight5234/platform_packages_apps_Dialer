@@ -34,6 +34,7 @@ import com.android.dialer.telecom.TelecomUtil;
 import com.android.incallui.InCallCameraManager.Listener;
 import com.android.incallui.InCallPresenter.CanAddCallListener;
 import com.android.incallui.InCallPresenter.InCallDetailsListener;
+import com.android.incallui.InCallPresenter.InCallEventListener;
 import com.android.incallui.InCallPresenter.InCallState;
 import com.android.incallui.InCallPresenter.InCallStateListener;
 import com.android.incallui.InCallPresenter.IncomingCallListener;
@@ -49,6 +50,7 @@ import com.android.incallui.incall.protocol.InCallButtonUi;
 import com.android.incallui.incall.protocol.InCallButtonUiDelegate;
 import com.android.incallui.multisim.SwapSimWorker;
 import com.android.incallui.videotech.utils.VideoUtils;
+import org.codeaurora.ims.utils.QtiImsExtUtils;
 
 /** Logic for call buttons. */
 public class CallButtonPresenter
@@ -56,6 +58,7 @@ public class CallButtonPresenter
         AudioModeListener,
         IncomingCallListener,
         InCallDetailsListener,
+        InCallEventListener,
         CanAddCallListener,
         Listener,
         InCallButtonUiDelegate {
@@ -87,6 +90,7 @@ public class CallButtonPresenter
     inCallPresenter.addListener(this);
     inCallPresenter.addIncomingCallListener(this);
     inCallPresenter.addDetailsListener(this);
+    inCallPresenter.addInCallEventListener(this);
     inCallPresenter.addCanAddCallListener(this);
     inCallPresenter.getInCallCameraManager().addCameraSelectionListener(this);
 
@@ -103,6 +107,7 @@ public class CallButtonPresenter
     AudioModeProvider.getInstance().removeListener(this);
     InCallPresenter.getInstance().removeIncomingCallListener(this);
     InCallPresenter.getInstance().removeDetailsListener(this);
+    InCallPresenter.getInstance().removeInCallEventListener(this);
     InCallPresenter.getInstance().getInCallCameraManager().removeCameraSelectionListener(this);
     InCallPresenter.getInstance().removeCanAddCallListener(this);
     isInCallButtonUiReady = false;
@@ -515,7 +520,8 @@ public class CallButtonPresenter
     inCallButtonUi.showButton(InCallButtonIds.BUTTON_DOWNGRADE_TO_AUDIO, showDowngradeToAudio);
     inCallButtonUi.showButton(
         InCallButtonIds.BUTTON_SWITCH_CAMERA,
-        isVideo && hasCameraPermission && call.getVideoTech().isTransmitting());
+        isVideo && hasCameraPermission && call.getVideoTech().isTransmitting()
+        && !BottomSheetHelper.getInstance().isHideMeSelected());
     inCallButtonUi.showButton(InCallButtonIds.BUTTON_PAUSE_VIDEO, showPauseVideo);
     if (isVideo) {
       inCallButtonUi.setVideoPaused(!call.getVideoTech().isTransmitting() || !hasCameraPermission);
@@ -544,6 +550,26 @@ public class CallButtonPresenter
   private boolean isDowngradeToAudioSupported(DialerCall call) {
     // TODO(a bug): If there is an RCS video share session, return true here
     return !call.can(CallCompat.Details.CAPABILITY_CANNOT_DOWNGRADE_VIDEO_TO_AUDIO);
+  }
+
+  /**
+   * Handles a change to the video call hide me selection
+   *
+   * @param shallTransmitStaticImage {@code true} if the app should show static image in preview,
+   * {@code false} otherwise.
+   */
+  @Override
+  public void onSendStaticImageStateChanged(boolean shallTransmitStaticImage) {
+    if (call == null || !QtiImsExtUtils.shallShowStaticImageUi(
+         BottomSheetHelper.getInstance().getPhoneId(), context)) {
+       return;
+     }
+
+     updateButtonsState(call);
+  }
+
+  @Override
+  public void onFullscreenModeChanged(boolean isFullscreenMode) {
   }
 
   @Override

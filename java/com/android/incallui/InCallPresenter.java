@@ -1462,6 +1462,17 @@ public class InCallPresenter implements CallList.Listener, AudioModeProvider.Aud
   }
 
   /**
+   * Called by the {@link BottomSheetHelper} to inform of a change in hide me selection.
+   *
+   * @param isEnabled {@code True} if entering hide me mode.
+   */
+  public void notifyStaticImageStateChanged(boolean isEnabled) {
+    for (InCallEventListener listener : inCallEventListeners) {
+      listener.onSendStaticImageStateChanged(isEnabled);
+    }
+  }
+
+  /**
    * When the state of in-call changes, this is the first method to get called. It determines if the
    * UI needs to be started or finished depending on the new state and does it.
    */
@@ -1621,6 +1632,7 @@ public class InCallPresenter implements CallList.Listener, AudioModeProvider.Aud
       LogUtil.i("InCallPresenter.attemptCleanup", "Cleaning up");
 
       cleanupSurfaces();
+      VideoCallPresenter.cleanUp();
 
       isChangingConfigurations = false;
 
@@ -1975,6 +1987,7 @@ public class InCallPresenter implements CallList.Listener, AudioModeProvider.Aud
   public interface InCallEventListener {
 
     void onFullscreenModeChanged(boolean isFullscreenMode);
+    void onSendStaticImageStateChanged(boolean isEnabled);
   }
 
   public interface InCallUiListener {
