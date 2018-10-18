@@ -824,6 +824,13 @@ public class InCallPresenter implements CallList.Listener, AudioModeProvider.Aud
     }
   }
 
+  @Override
+  public void onSuplServiceMessage(String suplNotificationMessage ) {
+      if (inCallActivity != null) {
+          inCallActivity.showSuplServiceMessageToast(suplNotificationMessage);
+      }
+  }
+
   /**
    * Called when there is a change to the call list. Sets the In-Call state for the entire in-call
    * app based on the information it gets from CallList. Dispatches the in-call state to all

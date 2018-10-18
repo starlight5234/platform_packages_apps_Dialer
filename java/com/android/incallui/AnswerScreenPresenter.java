@@ -281,6 +281,9 @@ public class AnswerScreenPresenter
 
     @Override
     public void onEnrichedCallSessionUpdate() {}
+
+    @Override
+    public void onSuplServiceMessage(String suplNotificationMessage) {}
   }
 
   private boolean isSmsResponseAllowed(DialerCall call) {

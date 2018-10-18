@@ -783,6 +783,9 @@ public class CallList implements DialerCallDelegate {
 
     /** Called when the user initiates a call to an international number while on WiFi. */
     void onInternationalCallOnWifi(@NonNull DialerCall call);
+
+    /** Called when there is a supplementary service notification  */
+    void onSuplServiceMessage(String suplNotificationMessage);
   }
 
   /** UiListener interface for measuring incall latency.(used by testing only) */
@@ -877,6 +880,13 @@ public class CallList implements DialerCallDelegate {
       for (Listener listener : listeners) {
         listener.onSessionModificationStateChange(call);
       }
+    }
+
+    @Override
+    public void onSuplServiceMessage(String suplNotificationMessage) {
+        for (Listener listener : listeners) {
+            listener.onSuplServiceMessage(suplNotificationMessage);
+        }
     }
   }
 }

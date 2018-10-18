@@ -97,4 +97,7 @@ public class PostCharDialogActivity extends AppCompatActivity implements CallLis
 
   @Override
   public void onInternationalCallOnWifi(@NonNull DialerCall call) {}
+
+  @Override
+  public void onSuplServiceMessage(String suplNotificationMessage) {}
 }

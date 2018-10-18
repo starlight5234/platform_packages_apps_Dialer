@@ -175,6 +175,9 @@ public class SpamCallListListener implements CallList.Listener {
   public void onInternationalCallOnWifi(@NonNull DialerCall call) {}
 
   @Override
+  public void onSuplServiceMessage(String suplNotificationMessage) {}
+
+  @Override
   public void onDisconnect(DialerCall call) {
     if (!shouldShowAfterCallNotification(call)) {
       return;
