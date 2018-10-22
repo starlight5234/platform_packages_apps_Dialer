@@ -98,4 +98,7 @@
 
   <!-- Size of call provider icon width and height -->
   <dimen name="call_provider_small_icon_size">12dp</dimen>
+
+  <!-- Dimensions for call log spinner -->
+  <dimen name="call_log_spinner_text_size">16sp</dimen>
 </resources>

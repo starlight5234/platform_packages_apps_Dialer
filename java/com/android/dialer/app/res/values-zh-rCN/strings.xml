@@ -168,4 +168,10 @@
   <string name="view_conversation">查看</string>
   <string name="ec_data_deleted">通话已删除。请前往“信息”应用查看和删除通过此通话分享的附件。</string>
   <string name="multiple_ec_data_deleted">通话已删除。请前往“信息”应用查看和删除通过通话分享的附件。</string>
+  <string name="call_log_show_all_slots">"所有 SIM 卡"</string>
+  <string name="call_log_all_calls_header">"所有通话"</string>
+  <string name="call_log_voicemail_header">"只显示语音信箱留言"</string>
+  <string name="call_log_incoming_header">"只显示来电"</string>
+  <string name="call_log_outgoing_header">"只显示外拨电话"</string>
+  <string name="call_log_missed_header">"只显示未接来电"</string>
 </resources>

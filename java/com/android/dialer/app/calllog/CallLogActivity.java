@@ -26,14 +26,17 @@ import android.support.design.widget.Snackbar;
 import android.support.v13.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBar;
+import android.telephony.TelephonyManager;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
 import android.view.ViewGroup;
 import com.android.contacts.common.list.ViewPagerTabs;
 import com.android.dialer.app.R;
 import com.android.dialer.calldetails.OldCallDetailsActivity;
 import com.android.dialer.common.Assert;
+import com.android.dialer.compat.telephony.TelephonyManagerCompat;
 import com.android.dialer.constants.ActivityRequestCodes;
 import com.android.dialer.database.CallLogQueryHandler;
 import com.android.dialer.logging.Logger;
@@ -59,6 +62,7 @@ public class CallLogActivity extends TransactionSafeActivity
   private String[] tabTitles;
   private boolean isResumed;
   private int selectedPageIndex;
+  private boolean isMultiSimSupported = false;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -73,6 +77,10 @@ public class CallLogActivity extends TransactionSafeActivity
     actionBar.setDisplayShowTitleEnabled(true);
     actionBar.setElevation(0);
 
+    TelephonyManager telephonyManager = getSystemService(TelephonyManager.class);
+    if (TelephonyManagerCompat.getPhoneCount(telephonyManager) > 1) {
+      isMultiSimSupported = true;
+    }
     int startingTab = TAB_INDEX_ALL;
     final Intent intent = getIntent();
     if (intent != null) {
@@ -97,7 +105,11 @@ public class CallLogActivity extends TransactionSafeActivity
     viewPagerTabs = (ViewPagerTabs) findViewById(R.id.viewpager_header);
 
     viewPagerTabs.setViewPager(viewPager);
-    viewPager.setCurrentItem(startingTab);
+    if (isMultiSimSupported) {
+      viewPagerTabs.setVisibility(View.GONE);
+    } else {
+      viewPager.setCurrentItem(startingTab);
+    }
   }
 
   @Override
@@ -240,8 +252,10 @@ public class CallLogActivity extends TransactionSafeActivity
     public Fragment getItem(int position) {
       switch (getRtlPosition(position)) {
         case TAB_INDEX_ALL:
-          return new CallLogFragment(
-              CallLogQueryHandler.CALL_TYPE_ALL, true /* isCallLogActivity */);
+          final boolean showMissedTypeOnly =
+                  isMultiSimSupported && selectedPageIndex == TAB_INDEX_MISSED;
+          return new CallLogFragment(showMissedTypeOnly ? Calls.MISSED_TYPE :
+              CallLogQueryHandler.CALL_TYPE_ALL, !showMissedTypeOnly/* isCallLogActivity */);
         case TAB_INDEX_MISSED:
           return new CallLogFragment(Calls.MISSED_TYPE, true /* isCallLogActivity */);
         default:
@@ -272,7 +286,7 @@ public class CallLogActivity extends TransactionSafeActivity
 
     @Override
     public int getCount() {
-      return TAB_INDEX_COUNT;
+      return isMultiSimSupported ? 1 : TAB_INDEX_COUNT;
     }
   }
 
