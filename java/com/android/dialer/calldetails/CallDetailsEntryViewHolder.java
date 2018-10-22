@@ -40,6 +40,10 @@ import com.android.dialer.glidephotomanager.PhotoInfo;
 import com.android.dialer.oem.MotorolaUtils;
 import com.android.dialer.util.DialerUtils;
 import com.android.dialer.util.IntentUtil;
+import org.codeaurora.ims.utils.QtiImsExtUtils;
+import android.telephony.SubscriptionInfo;
+import android.telephony.SubscriptionManager;
+
 
 /** ViewHolder for call entries in {@link OldCallDetailsActivity} or {@link CallDetailsActivity}. */
 public class CallDetailsEntryViewHolder extends ViewHolder {
@@ -112,6 +116,20 @@ public class CallDetailsEntryViewHolder extends ViewHolder {
         BuildCompat.isAtLeastP()
             && (entry.getFeatures() & Calls.FEATURES_RTT) == Calls.FEATURES_RTT;
 
+    boolean  is4GConferenceEnabledSub = false;
+    SubscriptionInfo si = SubscriptionManager.from(context).
+            getActiveSubscriptionInfoForIccIndex(entry.getAccountId());
+    if (si != null) {
+        int slotId = si.getSimSlotIndex();
+        int subId = si.getSubscriptionId();
+        if (SubscriptionManager.isValidSubscriptionId(subId)) {
+          is4GConferenceEnabledSub = QtiImsExtUtils.isCarrierConfigEnabled(
+              slotId, context, "config_enable_conference_dialer");
+          LogUtil.i("CallDetailsEntryViewHolder.setCallDetails",
+              "is4GConferenceEnabledSub: " + is4GConferenceEnabledSub);
+        }
+    }
+
     callTime.setTextColor(getColorForCallType(context, callType));
     callTypeIcon.clear();
     callTypeIcon.add(callType);
@@ -128,7 +146,7 @@ public class CallDetailsEntryViewHolder extends ViewHolder {
         callTypeHelper.getCallTypeText(callType, isVideoCall, isPulledCall, isDuoCall));
     callTime.setText(CallLogDates.formatDate(context, entry.getDate()));
 
-    if (CallTypeHelper.isMissedCallType(callType)) {
+    if (CallTypeHelper.isMissedCallType(callType) || is4GConferenceEnabledSub) {
       callDuration.setVisibility(View.GONE);
     } else {
       callDuration.setVisibility(View.VISIBLE);
