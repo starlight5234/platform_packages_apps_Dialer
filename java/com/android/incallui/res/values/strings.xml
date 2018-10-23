@@ -223,4 +223,8 @@
   <!-- Text for button to accept RTT request. [CHAR LIMIT=20] -->
   <string name="rtt_button_accept_request">Join RTT</string>
 
+  <!-- Text for volume boost button. -->
+  <string name="volume_boost_notify_enabled">"Volume boost ON"</string>
+  <string name="volume_boost_notify_disabled">"Volume boost OFF"</string>
+  <string name="volume_boost_notify_unavailable">"Volume boost is disabled when Wired/Bluetoot headset is used"</string>
 </resources>

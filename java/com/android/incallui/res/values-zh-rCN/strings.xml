@@ -74,4 +74,8 @@
   <!-- Title displayed in the overlay for incoming conference calls which include the name of the provider.
        [CHAR LIMIT=40] -->
   <string name="incoming_conf_via_template">"通过 <xliff:g id="provider_name">%s</xliff:g>会议来电"</string>
+
+  <string name="volume_boost_notify_enabled">"开启音量增强"</string>
+  <string name="volume_boost_notify_disabled">"关闭音量增强"</string>
+  <string name="volume_boost_notify_unavailable">"有线/蓝牙耳机连接时，音效增强不可用"</string>
 </resources>

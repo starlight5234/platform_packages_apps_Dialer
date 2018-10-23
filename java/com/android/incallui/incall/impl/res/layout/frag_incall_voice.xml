@@ -100,6 +100,15 @@
         android:layout_centerHorizontal="true"
         android:visibility="gone"/>
 
+    <!-- volume boost -->
+    <ImageButton
+        android:id="@+id/volume_boost"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_alignParentTop="true"
+        android:soundEffectsEnabled="false"
+        android:background="@drawable/vb_normal"/>
+
     <FrameLayout
         android:id="@+id/incall_dialpad_container"
         style="@style/DialpadContainer"
