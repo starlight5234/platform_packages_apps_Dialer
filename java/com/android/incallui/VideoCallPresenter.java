@@ -935,10 +935,11 @@ public class VideoCallPresenter
   public void onCameraDimensionsChange(DialerCall call, int width, int height) {
     LogUtil.i(
         "VideoCallPresenter.onCameraDimensionsChange",
-        "call: %s, width: %d, height: %d",
+        "call: %s, width: %d, height: %d videoCall: %s",
         call,
         width,
-        height);
+        height,
+        call.getVideoCall());
     if (videoCallScreen == null) {
       LogUtil.e("VideoCallPresenter.onCameraDimensionsChange", "ui is null");
       return;
@@ -955,7 +956,7 @@ public class VideoCallPresenter
     // Check if the preview surface is ready yet; if it is, set it on the {@code VideoCall}.
     // If it not yet ready, it will be set when when creation completes.
     Surface surface = getLocalVideoSurfaceTexture().getSavedSurface();
-    if (surface != null) {
+    if (surface != null && call.getVideoCall() != null) {
       previewSurfaceState = PreviewSurfaceState.SURFACE_SET;
       videoCall.setPreviewSurface(surface);
     }
