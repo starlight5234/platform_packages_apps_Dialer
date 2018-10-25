@@ -333,38 +333,64 @@ public class SpecialCharSequenceMgr {
         (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
 
     if (telephonyManager != null && input.equals(MMI_IMEI_DISPLAY)) {
-      int labelResId =
-          (telephonyManager.getPhoneType() == TelephonyManager.PHONE_TYPE_GSM)
-              ? R.string.imei
-              : R.string.meid;
-
+      final String label = context.getResources().getString(R.string.meid) + " & " +
+          context.getResources().getString(R.string.imei);
       View customView = LayoutInflater.from(context).inflate(R.layout.dialog_deviceids, null);
       ViewGroup holder = customView.findViewById(R.id.deviceids_holder);
 
       if (TelephonyManagerCompat.getPhoneCount(telephonyManager) > 1) {
+        String deviceId = null;
         for (int slot = 0; slot < telephonyManager.getPhoneCount(); slot++) {
-          String deviceId = telephonyManager.getDeviceId(slot);
-          if (!TextUtils.isEmpty(deviceId)) {
+          // Add MEID
+          final String meid = telephonyManager.getMeid(slot);
+          if ((deviceId == null && isValidMeid(meid))
+              || (deviceId != null && !deviceId.equals(meid)
+              && isValidMeid(meid))) {
             addDeviceIdRow(
                 holder,
-                deviceId,
+                meid,
+                /* showDecimal */
+                context.getResources().getBoolean(R.bool.show_device_id_in_hex_and_decimal),
+                /* showBarcode */ false);
+          }
+          deviceId = meid;
+
+          // Add IMEI
+          final String imei = telephonyManager.getImei(slot);
+          if (!TextUtils.isEmpty(imei)) {
+            addDeviceIdRow(
+                holder,
+                imei,
                 /* showDecimal */
                 context.getResources().getBoolean(R.bool.show_device_id_in_hex_and_decimal),
                 /* showBarcode */ false);
           }
         }
       } else {
-        addDeviceIdRow(
-            holder,
-            telephonyManager.getDeviceId(),
-            /* showDecimal */
-            context.getResources().getBoolean(R.bool.show_device_id_in_hex_and_decimal),
-            /* showBarcode */
-            context.getResources().getBoolean(R.bool.show_device_id_as_barcode));
+        final String meid = telephonyManager.getMeid();
+        if (isValidMeid(meid)) {
+          addDeviceIdRow(
+              holder,
+              meid,
+              /* showDecimal */
+              context.getResources().getBoolean(R.bool.show_device_id_in_hex_and_decimal),
+              /* showBarcode */
+              context.getResources().getBoolean(R.bool.show_device_id_as_barcode));
+        }
+        final String imei = telephonyManager.getImei();
+        if (!TextUtils.isEmpty(imei)) {
+          addDeviceIdRow(
+              holder,
+              imei,
+              /* showDecimal */
+              context.getResources().getBoolean(R.bool.show_device_id_in_hex_and_decimal),
+              /* showBarcode */
+              context.getResources().getBoolean(R.bool.show_device_id_as_barcode));
+        }
       }
 
       new AlertDialog.Builder(context)
-          .setTitle(labelResId)
+          .setTitle(label)
           .setView(customView)
           .setPositiveButton(android.R.string.ok, null)
           .setCancelable(false)
@@ -424,6 +450,14 @@ public class SpecialCharSequenceMgr {
     } else {
       barcode.setVisibility(View.GONE);
     }
+  }
+
+  private static boolean isValidMeid(String meid) {
+    if (!TextUtils.isEmpty(meid) && !meid.equals("0")
+        && !meid.startsWith("000000")) {
+      return true;
+    }
+    return false;
   }
 
   private static String getDecimalFromHex(String hex) {
