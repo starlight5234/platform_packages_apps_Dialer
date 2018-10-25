@@ -351,7 +351,7 @@ public class InCallPresenter implements CallList.Listener, AudioModeProvider.Aud
 
     Objects.requireNonNull(context);
     this.context = context;
-
+    BottomSheetHelper.getInstance().setUp(context);
     this.contactInfoCache = contactInfoCache;
 
     this.statusBarNotifier = statusBarNotifier;
@@ -1647,6 +1647,7 @@ public class InCallPresenter implements CallList.Listener, AudioModeProvider.Aud
         externalCallList.removeExternalCallListener(externalCallNotifier);
       }
       statusBarNotifier = null;
+      BottomSheetHelper.getInstance().tearDown();
 
       if (callList != null) {
         callList.removeListener(this);

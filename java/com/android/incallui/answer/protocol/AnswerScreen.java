@@ -43,4 +43,6 @@ public interface AnswerScreen {
   void dismissPendingDialogs();
 
   Fragment getAnswerScreenFragment();
+
+  void updateAnswerScreenUi();
 }

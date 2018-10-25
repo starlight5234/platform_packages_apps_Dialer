@@ -517,7 +517,7 @@ public class InCallActivity extends TransactionSafeFragmentActivity
     if (dialpadFragment != null) {
       dialpadFragment.onDialerKeyUp(null);
     }
-
+    BottomSheetHelper.getInstance().dismissBottomSheet();
     InCallPresenter.getInstance().getPseudoScreenState().removeListener(this);
     Trace.endSection();
   }
@@ -834,6 +834,7 @@ public class InCallActivity extends TransactionSafeFragmentActivity
 
     Logger.get(this).logScreenView(ScreenEvent.Type.INCALL_DIALPAD, this);
     getInCallOrRttCallScreen().onInCallScreenDialpadVisibilityChange(true);
+    notifyDialpadVisibilityState(true);
   }
 
   private void hideDialpadFragment() {
@@ -850,6 +851,15 @@ public class InCallActivity extends TransactionSafeFragmentActivity
       dialpadFragmentManager.executePendingTransactions();
       dialpadFragment.setUserVisibleHint(false);
       getInCallOrRttCallScreen().onInCallScreenDialpadVisibilityChange(false);
+      notifyDialpadVisibilityState(false);
+    }
+  }
+
+  public void notifyDialpadVisibilityState(boolean isShowing) {
+    if (getActiveInCallScreen() != null) {
+      getActiveInCallScreen().onInCallShowDialpad(isShowing);
+    } else {
+      LogUtil.w("InCallActvity.showDialpadFragment","in call screen is null");
     }
   }
 
@@ -1041,6 +1051,9 @@ public class InCallActivity extends TransactionSafeFragmentActivity
       internationalCallOnWifiFragment.dismiss();
     }
 
+    // Dismiss the BottomSheet which was inflated by clicking more button
+    BottomSheetHelper.getInstance().dismissBottomSheet();
+
     // Dismiss the answer screen
     AnswerScreen answerScreen = getAnswerScreen();
     if (answerScreen != null) {
@@ -1071,6 +1084,18 @@ public class InCallActivity extends TransactionSafeFragmentActivity
         LogUtil.e("InCallActivity.setExcludeFromRecents", "RuntimeException:\n%s", e);
       }
     }
+  }
+
+  private InCallScreen getActiveInCallScreen() {
+    String tag = null;
+    if (didShowVideoCallScreen) {
+       tag = Tags.VIDEO_CALL_SCREEN;
+    } else if (didShowInCallScreen) {
+      tag = Tags.IN_CALL_SCREEN;
+    }
+
+    return (tag == null) ? null : (InCallScreen)
+       getSupportFragmentManager().findFragmentByTag(tag);
   }
 
   @Nullable
@@ -1278,11 +1303,13 @@ public class InCallActivity extends TransactionSafeFragmentActivity
     }
 
     if (didChange) {
+      BottomSheetHelper.getInstance().dismissBottomSheet();
       Trace.beginSection("InCallActivity.commitTransaction");
       transaction.commitNow();
       Trace.endSection();
       Logger.get(this).logScreenView(ScreenEvent.Type.INCALL, this);
     }
+    notifyDialpadVisibilityState(isDialpadVisible());
     isInShowMainInCallFragment = false;
     Trace.endSection();
   }

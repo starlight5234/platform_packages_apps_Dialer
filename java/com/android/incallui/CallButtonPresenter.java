@@ -522,6 +522,9 @@ public class CallButtonPresenter
     inCallButtonUi.showButton(InCallButtonIds.BUTTON_MERGE, showMerge);
 
     inCallButtonUi.updateButtonStates();
+    if (BottomSheetHelper.getInstance().shallShowMoreButton(getActivity())) {
+      BottomSheetHelper.getInstance().updateMap();
+    }
   }
 
   private boolean hasVideoCallCapabilities(DialerCall call) {
