@@ -36,8 +36,9 @@ import android.widget.Toast;
 import android.telecom.VideoProfile;
 import com.android.incallui.call.CallList;
 import com.android.incallui.call.DialerCall;
+import com.android.incallui.call.state.DialerCallState;
 import org.codeaurora.ims.QtiCallConstants;
-
+import org.codeaurora.ims.utils.QtiImsExtUtils;
 /**
  * This class contains Qti specific utiltity functions.
  */
@@ -95,7 +96,6 @@ public class QtiCallUtils {
     public static boolean isVideoBidirectional(DialerCall call) {
         return call != null && VideoProfile.isBidirectional(call.getVideoState());
     }
-
 
     public static boolean isVideoTxOnly(DialerCall call) {
         if (call == null) {
@@ -219,5 +219,38 @@ public class QtiCallUtils {
             default:
                 return ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
         }
+    }
+
+    //Checks if DialerCall has video CRBT - an outgoing receive-only video call
+    public static boolean hasVideoCrbtVoLteCall(Context context, DialerCall call) {
+        if (context == null || !QtiImsExtUtils.isCarrierConfigEnabled(
+            BottomSheetHelper.getInstance().getPhoneId(),
+            context, "config_enable_video_crbt")) {
+        }
+        return (call != null && call.getState() == DialerCallState.DIALING
+            && isVideoRxOnly(call));
+    }
+
+    //Checks if CallList has CRBT VoLTE call - an outgoing receive-only video call
+    public static boolean hasVideoCrbtVoLteCall(Context context) {
+        if (context == null || !QtiImsExtUtils.isCarrierConfigEnabled(
+            BottomSheetHelper.getInstance().getPhoneId(),
+            context, "config_enable_video_crbt")) {
+            return false;
+        }
+        DialerCall call = CallList.getInstance().getFirstCall();
+        return (call != null && call.getState() == DialerCallState.DIALING
+                && isVideoRxOnly(call));
+    }
+
+    //Checks if CallList has CRBT Video Call. An outgoing bidirectional video call
+    //is treated as CRBT video call if CRBT feature is enabled
+    public static boolean hasVideoCrbtVtCall(Context context) {
+        DialerCall call = CallList.getInstance().getFirstCall();
+        boolean videoCrbtConfig = QtiImsExtUtils.isCarrierConfigEnabled(
+                 BottomSheetHelper.getInstance().getPhoneId(),
+                 context, "config_enable_video_crbt");
+        return (videoCrbtConfig && call != null && call.getState() == DialerCallState.DIALING
+                && isVideoBidirectional(call));
     }
 }

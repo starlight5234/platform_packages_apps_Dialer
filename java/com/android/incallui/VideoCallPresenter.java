@@ -910,6 +910,14 @@ public class VideoCallPresenter
     }
   }
 
+  @Override
+  public boolean isIncomingVideoAvailableForEarlyMedia() {
+      return primaryCall != null
+          && (primaryCall.getState() == DialerCallState.DIALING
+                  || primaryCall.getState() == DialerCallState.CONNECTING)
+          && mIsIncomingVideoAvailable;
+  }
+
   /** Checks for a change to the video call and changes it if required. */
   private void checkForVideoCallChange(DialerCall call) {
     final VideoCall videoCall = call.getVideoCall();
@@ -1111,8 +1119,8 @@ public class VideoCallPresenter
         shallTransmitStaticImage(),
         isModifyToVideoRxType);
     updateRemoteVideoSurfaceDimensions();
-    videoCallScreen.showVideoViews(showOutgoingVideo && !shallTransmitStaticImage(),
-        showIncomingVideo, isRemotelyHeld);
+    videoCallScreen.showVideoViews(showOutgoingVideo && !shallTransmitStaticImage() &&
+        !QtiCallUtils.hasVideoCrbtVoLteCall(context), showIncomingVideo, isRemotelyHeld);
 
     InCallPresenter.getInstance().enableScreenTimeout(VideoProfile.isAudioOnly(videoState));
     updateFullscreenAndGreenScreenMode(callState, sessionModificationState);

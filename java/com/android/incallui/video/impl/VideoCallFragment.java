@@ -803,6 +803,9 @@ public class VideoCallFragment extends Fragment
     }
 
     maybeLoadPreConfiguredImageAsync();
+    if (QtiCallUtils.hasVideoCrbtVoLteCall(getContext()) && !shouldShowPreview) {
+        previewTextureView.setVisibility(View.GONE);
+    }
   }
 
   private void maybeLoadPreConfiguredImageAsync() {
@@ -1343,7 +1346,12 @@ public class VideoCallFragment extends Fragment
     previewTextureView.setLayoutParams(params);
     previewTextureView.setOutlineProvider(circleOutlineProvider);
     updateOverlayBackground();
-    contactGridManager.setIsMiddleRowVisible(false);
+    /*
+     * If incoming video is available for dialing call to support
+     * early media or video CRBT, do not hide Middle Row
+     */
+    boolean showMiddleRow = videoCallScreenDelegate.isIncomingVideoAvailableForEarlyMedia();
+    contactGridManager.setIsMiddleRowVisible(showMiddleRow);
     updateMutePreviewOverlayVisibility();
 
     previewOffBlurredImageView.setLayoutParams(params);
