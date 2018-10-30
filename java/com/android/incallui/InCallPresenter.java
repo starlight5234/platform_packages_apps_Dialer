@@ -1502,6 +1502,16 @@ public class InCallPresenter implements CallList.Listener, AudioModeProvider.Aud
         "InCallPresenter.startOrFinishUi", "startOrFinishUi: " + inCallState + " -> " + newState);
 
     // TODO: Consider a proper state machine implementation
+    // If the call is auto answered bring up the InCallActivity
+    boolean isAutoAnswer = false;
+
+    if ((callList.getDisconnectedCall() == null) &&
+            (callList.getDisconnectingCall() == null)) {
+        isAutoAnswer = (inCallState == InCallState.INCOMING) &&
+                (newState == InCallState.INCALL) && (inCallActivity == null);
+    }
+
+    Log.d(this, "startOrFinishUi: " + isAutoAnswer);
 
     // If the state isn't changing we have already done any starting/stopping of activities in
     // a previous pass...so lets cut out early
@@ -1594,7 +1604,7 @@ public class InCallPresenter implements CallList.Listener, AudioModeProvider.Aud
       inCallActivity.dismissPendingDialogs();
     }
 
-    if ((showCallUi || showAccountPicker) && !shouldStartInBubbleMode()) {
+    if ((showCallUi || showAccountPicker || isAutoAnswer) && !shouldStartInBubbleMode()) {
       LogUtil.i("InCallPresenter.startOrFinishUi", "Start in call UI");
       showInCall(false /* showDialpad */, !showAccountPicker /* newOutgoingCall */);
     } else if (newState == InCallState.NO_CALLS) {
