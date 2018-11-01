@@ -87,6 +87,7 @@ import com.android.incallui.audiomode.AudioModeProvider;
 import com.android.incallui.BottomSheetHelper;
 import com.android.incallui.call.state.DialerCallState;
 import com.android.incallui.latencyreport.LatencyReport;
+import com.android.incallui.QtiCallUtils;
 import com.android.incallui.rtt.protocol.RttChatMessage;
 import com.android.incallui.videotech.VideoTech;
 import com.android.incallui.videotech.VideoTech.VideoTechListener;
@@ -645,8 +646,14 @@ public class DialerCall implements VideoTechListener, StateChangedListener, Capa
         if (phoneAccount != null) {
           isCallSubjectSupported =
               phoneAccount.hasCapabilities(PhoneAccount.CAPABILITY_CALL_SUBJECT);
+          final int simAccounts = TelecomUtil.getSubscriptionPhoneAccounts(context).size();
           if (phoneAccount.hasCapabilities(PhoneAccount.CAPABILITY_SIM_SUBSCRIPTION)) {
             cacheCarrierConfiguration(phoneAccountHandle);
+          }
+          if (phoneAccount.getLabel() != null && simAccounts > 1) {
+              callProviderLabel = phoneAccount.getLabel().toString();
+          } else {
+              callProviderLabel = "";
           }
         }
       }
@@ -1217,7 +1224,9 @@ public class DialerCall implements VideoTechListener, StateChangedListener, Capa
    * repeated calls to isEmergencyNumber.
    */
   private void updateEmergencyCallState() {
-    isEmergencyCall = TelecomCallUtil.isEmergencyCall(telecomCall);
+      Uri handle = telecomCall.getDetails().getHandle();
+      isEmergencyCall = QtiCallUtils.isEmergencyNumber
+              (handle == null ? "" : handle.getSchemeSpecificPart());
   }
 
   public LogState getLogState() {
@@ -1528,17 +1537,6 @@ public class DialerCall implements VideoTechListener, StateChangedListener, Capa
 
   /** Return the string label to represent the call provider */
   public String getCallProviderLabel() {
-    if (callProviderLabel == null) {
-      PhoneAccount account = getPhoneAccount();
-      if (account != null && !TextUtils.isEmpty(account.getLabel())) {
-        if (callCapableAccounts != null && callCapableAccounts.size() > 1) {
-          callProviderLabel = account.getLabel().toString();
-        }
-      }
-      if (callProviderLabel == null) {
-        callProviderLabel = "";
-      }
-    }
     return callProviderLabel;
   }
 

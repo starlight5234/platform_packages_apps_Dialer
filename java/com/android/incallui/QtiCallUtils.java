@@ -36,6 +36,8 @@ import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.res.Resources;
+import android.os.IBinder;
+import android.os.RemoteException;
 import android.telecom.Connection.VideoProvider;
 import android.telephony.SubscriptionInfo;
 import android.telephony.TelephonyManager;
@@ -47,16 +49,93 @@ import com.android.ims.ImsManager;
 import com.android.incallui.call.CallList;
 import com.android.incallui.call.DialerCall;
 import com.android.incallui.call.state.DialerCallState;
+import java.lang.reflect.*;
 import org.codeaurora.ims.QtiCallConstants;
 import org.codeaurora.ims.utils.QtiImsExtUtils;
+import org.codeaurora.internal.IExtTelephony;
+
 /**
  * This class contains Qti specific utiltity functions.
  */
 public class QtiCallUtils {
 
     private static String LOG_TAG = "QtiCallUtils";
+    private static IExtTelephony sIExtTelephony = null;
     //Maximum number of IMS phones in device.
     private static final int MAX_IMS_PHONE_COUNT = 2;
+
+    /**
+     * Returns IExtTelephony handle
+     */
+    public static IExtTelephony getIExtTelephony() {
+        if (sIExtTelephony != null) {
+            return sIExtTelephony;
+        }
+
+        IBinder b;
+        try {
+            Class c = Class.forName("android.os.ServiceManager");
+            Method m = c.getMethod("getService",new Class[]{String.class});
+
+            b = (IBinder)m.invoke(null, "extphone");
+            sIExtTelephony = IExtTelephony.Stub.asInterface(b);
+
+            b.linkToDeath(()->handleQtiExtTelephonyServiceDeath(), 0);
+        } catch (ClassNotFoundException e) {
+            Log.e(LOG_TAG, " ex: " + e);
+        } catch (IllegalArgumentException e) {
+            Log.e(LOG_TAG, " ex: " + e);
+        } catch (IllegalAccessException e) {
+            Log.e(LOG_TAG, " ex: " + e);
+        } catch (InvocationTargetException e) {
+            Log.e(LOG_TAG, " ex: " + e);
+        } catch (SecurityException e) {
+            Log.e(LOG_TAG, " ex: " + e);
+        } catch (NoSuchMethodException e) {
+            Log.e(LOG_TAG, " ex: " + e);
+        } catch (RemoteException e) {
+            Log.e(LOG_TAG, "Unable to listen for QtiExtTelephony service death");
+        }
+
+        return sIExtTelephony;
+    }
+
+    private static void handleQtiExtTelephonyServiceDeath() {
+        sIExtTelephony = null;
+        Log.i(LOG_TAG, "handleQtiExtTelephonyServiceDeath QtiExtTelephony binder died");
+    }
+
+    /**
+     * returns true if it is emrgency number else false
+     */
+    public static boolean isEmergencyNumber(String number) {
+        boolean isEmergencyNumber = false;
+
+        try {
+            isEmergencyNumber = getIExtTelephony().isEmergencyNumber(number);
+        } catch (RemoteException ex) {
+            Log.e(LOG_TAG, "Exception : " + ex);
+        } catch (NullPointerException ex) {
+            Log.e(LOG_TAG, "Exception : " + ex);
+        }
+        return isEmergencyNumber;
+    }
+
+    /**
+     * returns true if it is local emrgency number else false
+     */
+    public static boolean isLocalEmergencyNumber(String number) {
+        boolean isEmergencyNumber = false;
+
+        try {
+            isEmergencyNumber = getIExtTelephony().isLocalEmergencyNumber(number);
+        } catch (RemoteException ex) {
+            Log.e(LOG_TAG, "Exception : " + ex);
+        } catch (NullPointerException ex) {
+            Log.e(LOG_TAG, "Exception : " + ex);
+        }
+        return isEmergencyNumber;
+    }
 
    /**
      * Displays the string corresponding to the resourceId as a Toast on the UI
