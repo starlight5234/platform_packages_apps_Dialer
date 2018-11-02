@@ -418,7 +418,6 @@ public class VideoCallFragment extends Fragment
 
   @Override
   public void onVideoScreenStart() {
-    inCallButtonUiDelegate.refreshMuteState();
     videoCallScreenDelegate.onVideoCallScreenUiReady();
     getView().postDelayed(cameraPermissionDialogRunnable, CAMERA_PERMISSION_DIALOG_DELAY_IN_MILLIS);
     getView()
@@ -429,6 +428,7 @@ public class VideoCallFragment extends Fragment
   public void onResume() {
     super.onResume();
     LogUtil.i("VideoCallFragment.onResume", null);
+    inCallButtonUiDelegate.refreshMuteState();
     inCallScreenDelegate.onInCallScreenResumed();
   }
 
