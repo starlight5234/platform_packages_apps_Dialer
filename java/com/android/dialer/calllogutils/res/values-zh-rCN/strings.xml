@@ -10,6 +10,11 @@
   <string name="type_outgoing_video">拨出的视频通话</string>
   <string name="type_outgoing_video_pulled">已转接至其他设备的外拨视频通话</string>
   <string name="type_missed_video">错过的视频通话</string>
+  <string name="type_incoming_volte">4G语音通话来电</string>
+  <string name="type_incoming_volte_pulled">已转接至其他设备的4G语音通话来电</string>
+  <string name="type_outgoing_volte">外拨4G语音通话</string>
+  <string name="type_outgoing_volte_pulled">已转接至其他设备的外拨4G语音通话</string>
+  <string name="type_missed_volte">未接4G语音通话</string>
   <string name="type_voicemail">语音邮件</string>
   <string name="type_rejected">拒接的来电</string>
   <string name="type_blocked">屏蔽的来电</string>

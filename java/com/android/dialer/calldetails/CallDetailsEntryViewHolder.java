@@ -107,6 +107,20 @@ public class CallDetailsEntryViewHolder extends ViewHolder {
       CallTypeHelper callTypeHelper,
       boolean showMultimediaDivider) {
     int callType = entry.getCallType();
+    if ((entry.getFeatures() & Calls.FEATURES_HD_CALL) == Calls.FEATURES_HD_CALL) {
+      switch (callType) {
+        case Calls.INCOMING_TYPE :
+          callType = CallTypeHelper.INCOMING_IMS_TYPE;
+          break;
+        case Calls.OUTGOING_TYPE :
+          callType = CallTypeHelper.OUTGOING_IMS_TYPE;
+          break;
+        case Calls.MISSED_TYPE :
+          callType = CallTypeHelper.MISSED_IMS_TYPE;
+          break;
+        default:
+      }
+    }
     boolean isVideoCall = (entry.getFeatures() & Calls.FEATURES_VIDEO) == Calls.FEATURES_VIDEO;
     boolean isPulledCall =
         (entry.getFeatures() & Calls.FEATURES_PULLED_EXTERNALLY)
@@ -235,13 +249,16 @@ public class CallDetailsEntryViewHolder extends ViewHolder {
   private static @ColorInt int getColorForCallType(Context context, int callType) {
     switch (callType) {
       case Calls.OUTGOING_TYPE:
+      case CallTypeHelper.OUTGOING_IMS_TYPE:
       case Calls.VOICEMAIL_TYPE:
       case Calls.BLOCKED_TYPE:
       case Calls.INCOMING_TYPE:
+      case CallTypeHelper.INCOMING_IMS_TYPE:
       case Calls.ANSWERED_EXTERNALLY_TYPE:
       case Calls.REJECTED_TYPE:
         return ContextCompat.getColor(context, R.color.dialer_secondary_text_color);
       case Calls.MISSED_TYPE:
+      case CallTypeHelper.MISSED_IMS_TYPE:
       default:
         // It is possible for users to end up with calls with unknown call types in their
         // call history, possibly due to 3rd party call log implementations (e.g. to
