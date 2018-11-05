@@ -23,6 +23,7 @@ import android.support.v4.app.Fragment;
 import android.support.v4.os.UserManagerCompat;
 import android.telecom.CallAudioState;
 import android.telecom.PhoneAccountHandle;
+import android.widget.Toast;
 import com.android.contacts.common.compat.CallCompat;
 import com.android.dialer.common.Assert;
 import com.android.dialer.common.LogUtil;
@@ -75,6 +76,7 @@ public class CallButtonPresenter
   private boolean previousMuteState = false;
   private boolean isInCallButtonUiReady;
   private PhoneAccountHandle otherAccount;
+  private static final int MAX_PARTICIPANTS_LIMIT = 6;
 
   public CallButtonPresenter(Context context) {
     this.context = context.getApplicationContext();
@@ -270,11 +272,34 @@ public class CallButtonPresenter
 
   @Override
   public void mergeClicked() {
+    if (call == null) {
+      return;
+    }
+
     Logger.get(context)
         .logCallImpression(
             DialerImpression.Type.IN_CALL_MERGE_BUTTON_PRESSED,
             call.getUniqueCallId(),
             call.getTimeAddedMs());
+
+    if (QtiImsExtUtils.isCarrierConfigEnabled(BottomSheetHelper.getInstance().getPhoneId(),
+            context,"config_conference_call_show_participant_status")) {
+        int participantsCount = 0;
+        if (call.isConferenceCall()) {
+            participantsCount = call.getChildCallIds().size();
+        } else {
+            DialerCall backgroundCall = CallList.getInstance().getBackgroundCall();
+            if (backgroundCall != null && backgroundCall.isConferenceCall()) {
+                participantsCount = backgroundCall.getChildCallIds().size();
+            }
+        }
+        Log.i(this, "Number of participantsCount is " + participantsCount);
+        if (participantsCount >= MAX_PARTICIPANTS_LIMIT) {
+            Toast.makeText(context,
+                    R.string.too_many_recipients, Toast.LENGTH_SHORT).show();
+            return;
+        }
+    }
     TelecomAdapter.getInstance().merge(call.getId());
   }
 
