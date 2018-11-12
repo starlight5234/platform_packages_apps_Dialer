@@ -159,9 +159,11 @@ public class VideoCallPresenter
   private boolean isVideoCallScreenUiReady;
 
   private boolean isCameraRequired(int videoState, int sessionModificationState) {
-    return !shallTransmitStaticImage() && (VideoProfile.isBidirectional(videoState)
+    return !shallTransmitStaticImage() &&
+        !isModifyToVideoRxType(primaryCall) &&
+        (VideoProfile.isBidirectional(videoState)
         || VideoProfile.isTransmissionEnabled(videoState)
-        || isVideoUpgrade(sessionModificationState));
+        || (VideoProfile.isAudioOnly(videoState) && isVideoUpgrade(sessionModificationState)));
   }
 
   private void setPauseImage(VideoCall videoCall) {
@@ -242,6 +244,20 @@ public class VideoCallPresenter
 
     return VideoProfile.isTransmissionEnabled(videoState)
         || isVideoUpgrade(sessionModificationState);
+  }
+
+  private static boolean showOutgoingVideo(
+      Context context, int videoState, int sessionModificationState,
+      boolean isModifyToVideoRxType) {
+    if (!VideoUtils.hasCameraPermissionAndShownPrivacyToast(context)) {
+      LogUtil.i("VideoCallPresenter.showOutgoingVideo", "Camera permission is disabled by user.");
+      return false;
+    }
+
+    return VideoProfile.isTransmissionEnabled(videoState)
+        || (!isModifyToVideoRxType &&
+        VideoProfile.isAudioOnly(videoState) &&
+        isVideoUpgrade(sessionModificationState));
   }
 
   private static void updateCameraSelection(DialerCall call) {
@@ -764,6 +780,16 @@ public class VideoCallPresenter
 
       checkForOrientationAllowedChange(newPrimaryCall);
       updateCameraSelection(newPrimaryCall);
+
+      // Existing call is put on hold and new call is in incoming state does mean that
+      // user is trying to answer the call
+      if (isIncomingVideoCall(newPrimaryCall) &&
+          isTransmissionEnabled(primaryCall) &&
+          primaryCall.getState() == DialerCallState.ONHOLD) {
+        // Close camera on mPrimaryCall
+        LogUtil.v("VideoCallPresenter.onPrimaryCallChanged", "closing camera");
+        enableCamera(primaryCall, false);
+      }
       adjustVideoMode(newPrimaryCall);
     }
   }
@@ -842,12 +868,25 @@ public class VideoCallPresenter
   private void updateFullscreenAndGreenScreenMode(
       int callState, @SessionModificationState int sessionModificationState) {
     if (videoCallScreen != null) {
+      boolean hasVideoCallSentVideoUpgradeRequest =
+          isVideoCall(primaryCall)
+          && VideoUtils.hasSentVideoUpgradeRequest(sessionModificationState);
+
       boolean shouldShowFullscreen = InCallPresenter.getInstance().isFullscreen();
+
+      /*
+       * Do not enter green screen mode:
+       * 1. For VoLTE to VT-RX upgrade
+       * 2. If a video call is waiting for upgrade to video response
+       *    for eg. VT->VT-RX/VT-TX or VT-TX/VT-RX->VT etc.,
+       */
       boolean shouldShowGreenScreen =
           callState == DialerCallState.DIALING
               || callState == DialerCallState.CONNECTING
               || callState == DialerCallState.INCOMING
-              || isVideoUpgrade(sessionModificationState);
+              || (!hasVideoCallSentVideoUpgradeRequest
+              && !isModifyToVideoRxType(primaryCall)
+              && isVideoUpgrade(sessionModificationState));
       videoCallScreen.updateFullscreenAndGreenScreenMode(
           shouldShowFullscreen, shouldShowGreenScreen);
     }
@@ -1039,15 +1078,19 @@ public class VideoCallPresenter
       LogUtil.e("VideoCallPresenter.showVideoUi", "videoCallScreen is null returning");
       return;
     }
+    boolean isModifyToVideoRxType = isModifyToVideoRxType(primaryCall);
     boolean showIncomingVideo = showIncomingVideo(videoState, callState);
-    boolean showOutgoingVideo = showOutgoingVideo(context, videoState, sessionModificationState);
+    boolean showOutgoingVideo = showOutgoingVideo(context, videoState, sessionModificationState,
+        isModifyToVideoRxType);
     LogUtil.i(
         "VideoCallPresenter.showVideoUi",
-        "showIncoming: %b, showOutgoing: %b, isRemotelyHeld: %b shallTransmitStaticImage: %b",
+        "showIncoming: %b, showOutgoing: %b, isRemotelyHeld: %b shallTransmitStaticImage: %b" +
+         " isModifyToVideoRx: %b",
         showIncomingVideo,
         showOutgoingVideo,
         isRemotelyHeld,
-        shallTransmitStaticImage());
+        shallTransmitStaticImage(),
+        isModifyToVideoRxType);
     updateRemoteVideoSurfaceDimensions();
     videoCallScreen.showVideoViews(showOutgoingVideo && !shallTransmitStaticImage(),
         showIncomingVideo, isRemotelyHeld);
@@ -1474,5 +1517,11 @@ public class VideoCallPresenter
   private static boolean isVideoCall(int videoState) {
     return VideoProfile.isTransmissionEnabled(videoState)
         || VideoProfile.isReceptionEnabled(videoState);
+  }
+
+  private static boolean isModifyToVideoRxType(DialerCall call) {
+    return call != null
+        && (call.getVideoTech().getUpgradeToVideoState() == VideoProfile.STATE_RX_ENABLED ||
+        call.getVideoTech().getRequestedVideoState() == VideoProfile.STATE_RX_ENABLED);
   }
 }

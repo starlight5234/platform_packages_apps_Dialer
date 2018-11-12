@@ -49,6 +49,7 @@ import com.android.incallui.incall.protocol.InCallButtonIds;
 import com.android.incallui.incall.protocol.InCallButtonUi;
 import com.android.incallui.incall.protocol.InCallButtonUiDelegate;
 import com.android.incallui.multisim.SwapSimWorker;
+import com.android.incallui.videotech.utils.SessionModificationState;
 import com.android.incallui.videotech.utils.VideoUtils;
 import org.codeaurora.ims.utils.QtiImsExtUtils;
 
@@ -225,6 +226,10 @@ public class CallButtonPresenter
 
   @Override
   public void muteClicked(boolean checked, boolean clickedByUser) {
+    if (call == null) {
+      return;
+    }
+
     LogUtil.i(
         "CallButtonPresenter", "turning on mute: %s, clicked by user: %s", checked, clickedByUser);
     if (clickedByUser) {
@@ -465,14 +470,14 @@ public class CallButtonPresenter
     final boolean showSwap = call.can(android.telecom.Call.Details.CAPABILITY_SWAP_CONFERENCE);
     final boolean showHold =
         !showSwap
-            && (!call.hasSentVideoUpgradeRequest() || call.hasVideoUpgadeRequestFailed())
+            && !call.hasSentVideoUpgradeRequest()
             && call.can(android.telecom.Call.Details.CAPABILITY_SUPPORT_HOLD)
             && call.can(android.telecom.Call.Details.CAPABILITY_HOLD);
     final boolean isCallOnHold = call.getState() == DialerCallState.ONHOLD;
 
     final boolean showAddCall =
         TelecomAdapter.getInstance().canAddCall() && UserManagerCompat.isUserUnlocked(context)
-            && (!call.hasSentVideoUpgradeRequest() || call.hasVideoUpgadeRequestFailed());
+            && !call.hasSentVideoUpgradeRequest();
     // There can only be two calls so don't show the ability to merge when one of them
     // is a speak easy call.
     final boolean showMerge =
@@ -481,7 +486,8 @@ public class CallButtonPresenter
                 .getAllCalls()
                 .stream()
                 .noneMatch(c -> c != null && c.isSpeakEasyCall())
-            && call.can(android.telecom.Call.Details.CAPABILITY_MERGE_CONFERENCE);
+            && call.can(android.telecom.Call.Details.CAPABILITY_MERGE_CONFERENCE)
+            && !call.hasSentVideoUpgradeRequest();
     final boolean useExt = QtiCallUtils.useExt(context);
     final boolean showUpgradeToVideo = !isVideo && (hasVideoCallCapabilities(call)) && !useExt;
     final boolean showDowngradeToAudio = isVideo && isDowngradeToAudioSupported(call) && !useExt;
@@ -571,6 +577,17 @@ public class CallButtonPresenter
 
   @Override
   public void onFullscreenModeChanged(boolean isFullscreenMode) {
+  }
+
+  @Override
+  public void onSessionModificationStateChange(DialerCall call) {
+    if (inCallButtonUi != null && call != null && call.equals(this.call)) {
+      int sessionModifyState = call.getVideoTech().getSessionModificationState();
+      if (sessionModifyState == SessionModificationState.WAITING_FOR_UPGRADE_TO_VIDEO_RESPONSE ||
+          sessionModifyState == SessionModificationState.NO_REQUEST) {
+        updateButtonsState(call);
+      }
+    }
   }
 
   @Override

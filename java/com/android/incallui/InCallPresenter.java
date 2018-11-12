@@ -1024,6 +1024,7 @@ public class InCallPresenter implements CallList.Listener, AudioModeProvider.Aud
       // Re-evaluate which fragment is being shown.
       inCallActivity.onPrimaryCallStateChanged();
     }
+    notifySessionModificationStateChange(call);
   }
 
   /**
@@ -1436,6 +1437,12 @@ public class InCallPresenter implements CallList.Listener, AudioModeProvider.Aud
    */
   public boolean isFullscreen() {
     return isFullScreen;
+  }
+
+  public void notifySessionModificationStateChange(DialerCall call) {
+   for (InCallEventListener listener : inCallEventListeners) {
+     listener.onSessionModificationStateChange(call);
+   }
   }
 
   /**
@@ -1996,7 +2003,7 @@ public class InCallPresenter implements CallList.Listener, AudioModeProvider.Aud
    * UI. Used as a means of communicating between fragments that make up the UI.
    */
   public interface InCallEventListener {
-
+    void onSessionModificationStateChange(DialerCall call);
     void onFullscreenModeChanged(boolean isFullscreenMode);
     void onSendStaticImageStateChanged(boolean isEnabled);
   }

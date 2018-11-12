@@ -92,16 +92,29 @@ public class QtiCallUtils {
     }
 
     public static boolean isVideoBidirectional(DialerCall call) {
-        return (call != null && call.getVideoState() == VideoProfile.STATE_BIDIRECTIONAL);
+        return call != null && VideoProfile.isBidirectional(call.getVideoState());
     }
 
 
     public static boolean isVideoTxOnly(DialerCall call) {
-        return (call != null && call.getVideoState() == VideoProfile.STATE_TX_ENABLED);
+        if (call == null) {
+            return false;
+        }
+        return isVideoTxOnly(call.getVideoState());
+    }
+
+    public static boolean isVideoTxOnly(int videoState) {
+        return VideoProfile.isTransmissionEnabled(videoState) &&
+                !VideoProfile.isReceptionEnabled(videoState);
     }
 
     public static boolean isVideoRxOnly(DialerCall call) {
-        return (call != null && call.getVideoState() == VideoProfile.STATE_RX_ENABLED);
+        if (call == null) {
+            return false;
+        }
+        int videoState = call.getVideoState();
+        return !VideoProfile.isTransmissionEnabled(videoState) &&
+                VideoProfile.isReceptionEnabled(videoState);
     }
 
     /**
@@ -182,7 +195,7 @@ public class QtiCallUtils {
         }
     }
 
-    private static DialerCall getIncomingOrActiveCall() {
+    public static DialerCall getIncomingOrActiveCall() {
         CallList callList = InCallPresenter.getInstance().getCallList();
         if (callList == null) {
            return null;

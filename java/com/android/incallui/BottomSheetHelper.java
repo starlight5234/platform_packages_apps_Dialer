@@ -368,6 +368,11 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
     }
 
     @Override
+    public void onSessionModificationStateChange(DialerCall call) {
+      //No-op
+    }
+
+    @Override
     public void onPrimaryCallChanged(DialerCall call) {
       LogUtil.d("BottomSheetHelper.onPrimaryCallChanged", "");
       dismissBottomSheet();
@@ -626,6 +631,10 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
      */
     private void changeToVideoClicked(DialerCall call, int videoState) {
       call.getVideoTech().upgradeToVideo(videoState);
+    }
+
+    public PrimaryCallTracker getPrimaryCallTracker() {
+      return mPrimaryCallTracker;
     }
 
     /**

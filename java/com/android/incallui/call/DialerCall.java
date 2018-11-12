@@ -1173,10 +1173,6 @@ public class DialerCall implements VideoTechListener, StateChangedListener, Capa
     return false;
   }
 
-  public boolean hasVideoUpgadeRequestFailed() {
-    return VideoUtils.hasVideoUpgradeRequestFailed(getVideoTech().getSessionModificationState());
-  }
-
   /**
    * Determines if the call handle is an emergency number or not and caches the result to avoid
    * repeated calls to isEmergencyNumber.

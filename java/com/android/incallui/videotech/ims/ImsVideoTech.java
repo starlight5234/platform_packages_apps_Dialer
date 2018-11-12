@@ -44,6 +44,7 @@ public class ImsVideoTech implements VideoTech {
   private @SessionModificationState int sessionModificationState =
       SessionModificationState.NO_REQUEST;
   private int previousVideoState = VideoProfile.STATE_AUDIO_ONLY;
+  private int mUpgradeToVideoState = -1;
   private boolean paused = false;
   private String savedCameraId;
 
@@ -174,6 +175,13 @@ public class ImsVideoTech implements VideoTech {
   }
 
   void setSessionModificationState(@SessionModificationState int state) {
+    LogUtil.i(
+        "ImsVideoTech.setSessionModificationState", "%d -> %d", sessionModificationState, state);
+
+    if (state == SessionModificationState.NO_REQUEST) {
+      mUpgradeToVideoState = -1;
+    }
+
     if (state != sessionModificationState) {
       LogUtil.i(
           "ImsVideoTech.setSessionModificationState", "%d -> %d", sessionModificationState, state);
@@ -185,6 +193,7 @@ public class ImsVideoTech implements VideoTech {
   @Override
   public void upgradeToVideo(@NonNull Context context) {
     LogUtil.enterBlock("ImsVideoTech.upgradeToVideo");
+    mUpgradeToVideoState = VideoProfile.STATE_BIDIRECTIONAL;
     int unpausedVideoState = getUnpausedVideoState(call.getDetails().getVideoState());
     call.getVideoCall()
         .sendSessionModifyRequest(
@@ -197,6 +206,7 @@ public class ImsVideoTech implements VideoTech {
   @Override
   public void upgradeToVideo(int videoState) {
     LogUtil.i("ImsVideoTech.upgradeToVideo", "videostate = " + videoState);
+    mUpgradeToVideoState = videoState;
     int unpausedVideoState = getUnpausedVideoState(videoState);
     call.getVideoCall()
         .sendSessionModifyRequest(
@@ -371,11 +381,16 @@ public class ImsVideoTech implements VideoTech {
 
   @Override
   public int getRequestedVideoState() {
-      if (callback == null) {
-        LogUtil.w("ImsVideoTech.getRequestedVideoState", "callback is null");
-        return VideoProfile.STATE_AUDIO_ONLY;
-      }
-      return callback.getRequestedVideoState();
+    if (callback == null) {
+      LogUtil.w("ImsVideoTech.getRequestedVideoState", "callback is null");
+      return VideoProfile.STATE_AUDIO_ONLY;
+    }
+    return callback.getRequestedVideoState();
+  }
+
+  @Override
+  public int getUpgradeToVideoState() {
+    return mUpgradeToVideoState;
   }
 
   private boolean canPause() {

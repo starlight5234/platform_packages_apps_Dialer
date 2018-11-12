@@ -1044,6 +1044,11 @@ public class CallCardPresenter
     return primary != null && primary.getState() == DialerCallState.ACTIVE;
   }
 
+  @Override
+  public void onSessionModificationStateChange(DialerCall call) {
+   //No-op
+  }
+
   private boolean shouldShowEndCallButton(DialerCall primary, int callState) {
     if (primary == null) {
       return false;

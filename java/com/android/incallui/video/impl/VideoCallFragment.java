@@ -964,6 +964,8 @@ public class VideoCallFragment extends Fragment
       exitFullscreenMode();
     }
 
+    updateRemoteOffView();
+
     OnHoldFragment onHoldFragment =
         ((OnHoldFragment)
             getChildFragmentManager().findFragmentById(R.id.videocall_on_hold_banner));
@@ -1384,7 +1386,13 @@ public class VideoCallFragment extends Fragment
           new Runnable() {
             @Override
             public void run() {
-              remoteVideoOff.setVisibility(View.GONE);
+              boolean remoteEnabled = isInGreenScreenMode || shouldShowRemote;
+              boolean isResumed = remoteEnabled && !isRemotelyHeld;
+              if (isResumed) {
+                remoteVideoOff.setVisibility(View.GONE);
+              } else {
+                LogUtil.v("VideoCallFragment.updateRemoteOffView", "Not resumed.Ignore");
+              }
             }
           },
           VIDEO_OFF_VIEW_FADE_OUT_DELAY_IN_MILLIS);
