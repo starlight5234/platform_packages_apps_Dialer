@@ -128,6 +128,10 @@ public class VideoCallPresenter
    * Determines if the countdown is currently running to automatically enter full screen video mode.
    */
   private boolean autoFullScreenPending = false;
+
+  /** Stores current orientation mode for primary call.*/
+  private int currentOrientationMode = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
+
   /** Whether if the call is remotely held. */
   private boolean isRemotelyHeld = false;
   // Holds TRUE if default image should be used as static image else holds FALSE
@@ -410,6 +414,7 @@ public class VideoCallPresenter
     LogUtil.v("VideoCallPresenter.onVideoCallScreenUiUnready", "");
     Assert.checkState(isVideoCallScreenUiReady);
 
+    checkForOrientationAllowedChange(primaryCall);
     cancelAutoFullScreen();
 
     InCallPresenter.getInstance().removeListener(this);
@@ -865,17 +870,14 @@ public class VideoCallPresenter
   }
 
   private void checkForOrientationAllowedChange(@Nullable DialerCall call) {
-    if(!OrientationModeHandler.getInstance().isOrientationDynamic()) {
-      return;
-    }
-
+    LogUtil.d("VideoCallPresenter.checkForOrientationAllowedChange","call : "+ call +
+        " currentOrientationMode = " + currentOrientationMode);
+    int orientation = OrientationModeHandler.getInstance().getOrientation(call);
     // Call could be null when video call ended. This check could prevent unwanted orientation
     // change before incall UI gets destroyed.
-    if (call != null) {
-      InCallPresenter.getInstance()
-        .setInCallAllowsOrientationChange(isVideoCall(call) || isVideoUpgrade(call) ?
-            InCallOrientationEventListener.ACTIVITY_PREFERENCE_ALLOW_ROTATION :
-            InCallOrientationEventListener.ACTIVITY_PREFERENCE_DISALLOW_ROTATION);
+    if (call != null && orientation != currentOrientationMode &&
+        InCallPresenter.getInstance().setInCallAllowsOrientationChange(orientation)) {
+      currentOrientationMode = orientation;
     }
   }
 
@@ -1060,6 +1062,7 @@ public class VideoCallPresenter
         false /* isRemotelyHeld */);
     enableCamera(primaryCall, false);
     InCallPresenter.getInstance().setFullScreen(false);
+    checkForOrientationAllowedChange(primaryCall);
     InCallPresenter.getInstance().enableScreenTimeout(true);
 
     if (primaryCall != null &&

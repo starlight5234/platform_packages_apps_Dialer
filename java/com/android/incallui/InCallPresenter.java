@@ -1805,16 +1805,17 @@ public class InCallPresenter implements CallList.Listener, AudioModeProvider.Aud
    *
    * @param orientation {@link ActivityInfo#screenOrientation} Actual orientation value to set
    */
-  public void setInCallAllowsOrientationChange(int orientation) {
+  public boolean setInCallAllowsOrientationChange(int orientation) {
     if (inCallActivity == null) {
       LogUtil.e(
           "InCallPresenter.setInCallAllowsOrientationChange",
           "InCallActivity is null. Can't set requested orientation.");
-      return;
+      return false;
     }
     inCallActivity.setRequestedOrientation(orientation);
     inCallActivity.enableInCallOrientationEventListener(
         orientation == InCallOrientationEventListener.ACTIVITY_PREFERENCE_ALLOW_ROTATION);
+    return true;
   }
 
   public void enableScreenTimeout(boolean enable) {

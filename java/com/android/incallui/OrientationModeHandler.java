@@ -32,8 +32,11 @@ import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 import android.telecom.VideoProfile;
 import com.android.incallui.call.DialerCall;
+import com.android.incallui.call.state.DialerCallState;
 import com.android.incallui.InCallPresenter.InCallDetailsListener;
+import com.android.incallui.InCallPresenter.InCallEventListener;
 import com.android.incallui.InCallPresenter.InCallUiListener;
+import com.android.incallui.videotech.utils.SessionModificationState;
 import org.codeaurora.ims.QtiCallConstants;
 
 /**
@@ -44,7 +47,7 @@ import org.codeaurora.ims.QtiCallConstants;
  *
  */
 public class OrientationModeHandler implements InCallDetailsListener, InCallUiListener,
-    PrimaryCallTracker.PrimaryCallChangeListener {
+    PrimaryCallTracker.PrimaryCallChangeListener, InCallEventListener {
 
     private static OrientationModeHandler sOrientationModeHandler;
 
@@ -77,8 +80,10 @@ public class OrientationModeHandler implements InCallDetailsListener, InCallUiLi
     public void setUp() {
         mPrimaryCallTracker = new PrimaryCallTracker();
         InCallPresenter.getInstance().addListener(mPrimaryCallTracker);
+        InCallPresenter.getInstance().addIncomingCallListener(mPrimaryCallTracker);
         InCallPresenter.getInstance().addDetailsListener(this);
         InCallPresenter.getInstance().addInCallUiListener(this);
+        InCallPresenter.getInstance().addInCallEventListener(this);
         mPrimaryCallTracker.addListener(this);
     }
 
@@ -89,12 +94,14 @@ public class OrientationModeHandler implements InCallDetailsListener, InCallUiLi
      */
     public void tearDown() {
         InCallPresenter.getInstance().removeListener(mPrimaryCallTracker);
+        InCallPresenter.getInstance().removeIncomingCallListener(mPrimaryCallTracker);
         InCallPresenter.getInstance().removeDetailsListener(this);
         InCallPresenter.getInstance().removeInCallUiListener(this);
         if (mPrimaryCallTracker != null) {
             mPrimaryCallTracker.removeListener(this);
             mPrimaryCallTracker = null;
         }
+        InCallPresenter.getInstance().removeInCallEventListener(this);
         mOrientationMode = QtiCallConstants.ORIENTATION_MODE_UNSPECIFIED;
     }
 
@@ -108,6 +115,10 @@ public class OrientationModeHandler implements InCallDetailsListener, InCallUiLi
         Log.d(this, "onDetailsChanged: - call: " + call + "details: " + details);
         if (details == null) {
           Log.e(this, "onDetailsChanged: details is null");
+          return;
+        }
+        if (!mPrimaryCallTracker.isPrimaryCall(call)) {
+          Log.e(this, "onDetailsChanged: call is non-primary call");
           return;
         }
         if (mPrimaryCallTracker != null && !mPrimaryCallTracker.isPrimaryCall(call)) {
@@ -191,7 +202,10 @@ public class OrientationModeHandler implements InCallDetailsListener, InCallUiLi
      * @param call The current call.
      */
     public int getOrientation(DialerCall call) {
-        if (isVideoOrUpgrade(call)) {
+        // When VT call is put on hold, user is presented with VoLTE UI.
+        // Hence, restricting held VT call to change orientation.
+        if (isVideoOrUpgrade(call) && (call.getNonConferenceState() != DialerCallState.ONHOLD)
+                && (call.getNonConferenceState() != DialerCallState.DISCONNECTED)) {
             return (mOrientationMode == QtiCallConstants.ORIENTATION_MODE_UNSPECIFIED) ?
                     InCallOrientationEventListener.ACTIVITY_PREFERENCE_ALLOW_ROTATION :
                     QtiCallUtils.toScreenOrientation(mOrientationMode);
@@ -213,8 +227,7 @@ public class OrientationModeHandler implements InCallDetailsListener, InCallUiLi
             mOrientationMode = QtiCallConstants.ORIENTATION_MODE_UNSPECIFIED;
             return;
         }
-        mVideoState = call.getVideoState();
-        onScreenOrientationChanged(call, QtiCallUtils.toScreenOrientation(mOrientationMode));
+        mayBeUpdateOrientationMode(call, call.getExtras());
     }
 
     public boolean isOrientationDynamic() {
@@ -225,4 +238,26 @@ public class OrientationModeHandler implements InCallDetailsListener, InCallUiLi
         return (call != null && call.isVideoCall()
             && mOrientationMode == QtiCallConstants.ORIENTATION_MODE_DYNAMIC);
     }
+
+    @Override
+    public void onSessionModificationStateChange(DialerCall call) {
+       Log.v(this,"onSessionModificationStateChange");
+       if (call == null) {
+         Log.w(this,"Call is null");
+         return;
+       }
+       if (mPrimaryCallTracker != null && mPrimaryCallTracker.isPrimaryCall(call)){
+           if (call.getVideoTech().getSessionModificationState()
+                  == SessionModificationState.NO_REQUEST) {
+              onScreenOrientationChanged(call, getOrientation(call));
+          }
+       } else {
+           Log.w(this,"Primary Call Tracker is null or call is not a primary call");
+       }
+    }
+    @Override
+    public void onFullscreenModeChanged(boolean isFullscreenMode) {}
+
+    @Override
+    public void onSendStaticImageStateChanged(boolean isEnabled) {}
 }

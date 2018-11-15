@@ -142,7 +142,6 @@ public class InCallActivity extends TransactionSafeFragmentActivity
   private View pseudoBlackScreenOverlay;
   private SelectPhoneAccountDialogFragment selectPhoneAccountDialogFragment;
   private String dtmfTextToPrepopulate;
-  private boolean allowOrientationChange;
   private boolean animateDialpadOnShow;
   private boolean didShowAnswerScreen;
   private boolean didShowInCallScreen;
@@ -1207,22 +1206,6 @@ public class InCallActivity extends TransactionSafeFragmentActivity
     rttRequestDialogFragment.show(getSupportFragmentManager(), Tags.RTT_REQUEST_DIALOG);
   }
 
-  public void setAllowOrientationChange(boolean allowOrientationChange) {
-    if (!OrientationModeHandler.getInstance().isOrientationDynamic()) {
-      return;
-    }
-    if (this.allowOrientationChange == allowOrientationChange) {
-      return;
-    }
-    this.allowOrientationChange = allowOrientationChange;
-    if (!allowOrientationChange) {
-      setRequestedOrientation(InCallOrientationEventListener.ACTIVITY_PREFERENCE_DISALLOW_ROTATION);
-    } else {
-      setRequestedOrientation(InCallOrientationEventListener.ACTIVITY_PREFERENCE_ALLOW_ROTATION);
-    }
-    enableInCallOrientationEventListener(allowOrientationChange);
-  }
-
   public void hideMainInCallFragment() {
     LogUtil.enterBlock("InCallActivity.hideMainInCallFragment");
     if (getCallCardFragmentVisible()) {
@@ -1269,8 +1252,6 @@ public class InCallActivity extends TransactionSafeFragmentActivity
         didShowRttCallScreen,
         didShowVideoCallScreen,
         didShowSpeakEasyScreen);
-    // Only video call ui allows orientation change.
-    setAllowOrientationChange(shouldShowVideoUi.shouldShow);
 
     FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
     boolean didChange;
