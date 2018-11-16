@@ -65,20 +65,4 @@
   <string name="rtt_request_dialog_more_information">RTT 可为以下类型的来电者提供协助：失聪者、听力障碍人士、语言障碍人士或需要语音以外服务的人。</string>
   <string name="rtt_button_decline_request">不用了</string>
   <string name="rtt_button_accept_request">加入 RTT</string>
-<<<<<<< HEAD
-  <string name="add_participant_option_msg">添加参与者</string>
-  <string name="video_rx_label">视频接收</string>
-  <string name="video_tx_label">视频发送</string>
-  <string name="modify_call_label">更改通话类型</string>
-  <string name="notification_requesting_video_tx_call">"呼入视频发送请求"</string>
-  <string name="notification_requesting_video_rx_call">"呼入视频接收请求"</string>
-  <string name="modify_call_option_title">何种通话类型?</string>
-  <string name="modify_call_option_vt">双向视频</string>
-  <string name="modify_call_option_vt_tx">视频发送</string>
-  <string name="modify_call_option_vt_rx">视频接收</string>
-  <string name="modify_call_option_voice">仅语音</string>
-  <string name="too_many_recipients">4G会议电话的参与人数上限为6人。</string>
-  <string name="dialpad_label">显示拨号盘</string>
-=======
->>>>>>> parent of 31332f7... IMS: Provide Chinese translation for some IMS features
 </resources>

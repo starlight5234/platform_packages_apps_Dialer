@@ -212,5 +212,4 @@
   <!-- Text for button to accept RTT request. [CHAR LIMIT=20] -->
   <string name="rtt_button_accept_request">Join RTT</string>
 
-  <string name="too_many_recipients">The maximum allowed participants in a 4G conference call are 6.</string>
 </resources>
