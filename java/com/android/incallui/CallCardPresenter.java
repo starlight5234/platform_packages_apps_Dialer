@@ -455,6 +455,8 @@ public class CallCardPresenter
               && MotorolaUtils.shouldBlinkHdIconWhenConnectingCall(context);
 
       boolean isBusiness = primaryContactInfo != null && primaryContactInfo.isBusiness;
+      boolean isConfCall = (primary.isConferenceCall() || primary.isIncomingConfCall())
+          && !primary.hasProperty(Details.PROPERTY_GENERIC_CONFERENCE);
 
       // Check for video state change and update the visibility of the contact photo.  The contact
       // photo is hidden when the incoming video surface is shown.
@@ -479,9 +481,7 @@ public class CallCardPresenter
                       PhoneNumberHelper.formatNumber(
                           context, primary.getCallbackNumber(), primary.getSimCountryIso()))
                   .setIsWifi(primary.hasProperty(Details.PROPERTY_WIFI))
-                  .setIsConference(
-                      primary.isConferenceCall()
-                          && !primary.hasProperty(Details.PROPERTY_GENERIC_CONFERENCE))
+                  .setIsConference(isConfCall)
                   .setIsWorkCall(isWorkCall)
                   .setIsHdAttempting(isAttemptingHdAudioCall)
                   .setIsHdAudioCall(isHdAudioCall)
