@@ -92,4 +92,17 @@
   <string name="cancel_modify_call_title">取消更改通话类型?</string>
   <string name="cancel_upgrade">取消视频请求</string>
   <string name="not_cancel">不取消</string>
+  <string name="add_participant_option_msg">添加参与者</string>
+  <string name="video_rx_label">视频接收</string>
+  <string name="video_tx_label">视频发送</string>
+  <string name="modify_call_label">更改通话类型</string>
+  <string name="notification_requesting_video_tx_call">"呼入视频发送请求"</string>
+  <string name="notification_requesting_video_rx_call">"呼入视频接收请求"</string>
+  <string name="modify_call_option_title">何种通话类型?</string>
+  <string name="modify_call_option_vt">双向视频</string>
+  <string name="modify_call_option_vt_tx">视频发送</string>
+  <string name="modify_call_option_vt_rx">视频接收</string>
+  <string name="modify_call_option_voice">仅语音</string>
+  <string name="too_many_recipients">4G会议电话的参与人数上限为6人。</string>
+  <string name="dialpad_label">显示拨号盘</string>
 </resources>
