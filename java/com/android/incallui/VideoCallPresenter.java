@@ -895,10 +895,12 @@ public class VideoCallPresenter
        * 1. For VoLTE to VT-RX upgrade
        * 2. If a video call is waiting for upgrade to video response
        *    for eg. VT->VT-RX/VT-TX or VT-TX/VT-RX->VT etc.,
+       * 3. If incoming video is available for dialing call to support
+       *    early media
        */
       boolean shouldShowGreenScreen =
-          callState == DialerCallState.DIALING
-              || callState == DialerCallState.CONNECTING
+          ((callState == DialerCallState.DIALING
+              || callState == DialerCallState.CONNECTING) && !mIsIncomingVideoAvailable)
               || callState == DialerCallState.INCOMING
               || (!hasVideoCallSentVideoUpgradeRequest
               && !isModifyToVideoRxType(primaryCall)

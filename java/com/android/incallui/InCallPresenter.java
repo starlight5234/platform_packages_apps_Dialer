@@ -65,6 +65,7 @@ import com.android.incallui.audiomode.AudioModeProvider;
 import com.android.incallui.call.CallList;
 import com.android.incallui.call.DialerCall;
 import com.android.incallui.call.ExternalCallList;
+import com.android.incallui.call.InCallVideoCallCallbackNotifier;
 import com.android.incallui.call.TelecomAdapter;
 import com.android.incallui.call.state.DialerCallState;
 import com.android.incallui.disconnectdialog.DisconnectMessage;
@@ -388,6 +389,7 @@ public class InCallPresenter implements CallList.Listener, AudioModeProvider.Aud
     activeCallsListener = new ActiveCallsCallListListener(context);
     this.callList.addListener(activeCallsListener);
 
+    InCallVideoCallCallbackNotifier.getInstance().setUp();
     InCallCsRedialHandler.getInstance().setUp(context);
     VideoPauseController.getInstance().setUp(this);
 
@@ -493,6 +495,7 @@ public class InCallPresenter implements CallList.Listener, AudioModeProvider.Aud
         .listen(phoneStateListener, PhoneStateListener.LISTEN_NONE);
 
     attemptCleanup();
+    InCallVideoCallCallbackNotifier.getInstance().tearDown();
     VideoPauseController.getInstance().tearDown();
     AudioModeProvider.getInstance().removeListener(this);
 
