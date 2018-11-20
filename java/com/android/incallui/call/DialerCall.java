@@ -106,6 +106,7 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import org.codeaurora.ims.utils.QtiImsExtUtils;
 
 /** Describes a single call and its state. */
 public class DialerCall implements VideoTechListener, StateChangedListener, CapabilitiesListener {
@@ -1261,6 +1262,18 @@ public class DialerCall implements VideoTechListener, StateChangedListener, Capa
 
   public String toSimpleString() {
     return super.toString();
+  }
+
+  public boolean isIncomingConfCall() {
+    int callState = getState();
+    if (callState == DialerCallState.INCOMING || callState == DialerCallState.CALL_WAITING) {
+      Bundle extras = getExtras();
+      boolean incomingConf = (extras == null)? false :
+          extras.getBoolean(QtiImsExtUtils.QTI_IMS_INCOMING_CONF_EXTRA_KEY, false);
+      LogUtil.i("DialerCall", "isIncomingConfCall = " + incomingConf);
+      return incomingConf;
+    }
+    return false;
   }
 
   @CallHistoryStatus
