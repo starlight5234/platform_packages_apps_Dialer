@@ -51,6 +51,7 @@ import com.android.dialer.searchfragment.list.NewSearchFragment;
 import com.android.dialer.searchfragment.list.NewSearchFragment.SearchFragmentListener;
 import com.android.dialer.smartdial.util.SmartDialNameMatcher;
 import com.android.dialer.util.TransactionSafeActivity;
+import com.android.incallui.QtiCallUtils;
 import com.google.common.base.Optional;
 import java.util.ArrayList;
 import java.util.List;
@@ -479,6 +480,14 @@ public class MainSearchController implements SearchBarListener {
     } else if (menuItem.getItemId() == R.id.menu_call_history) {
       final Intent intent = new Intent(activity, CallLogActivity.class);
       activity.startActivity(intent);
+    } else if (menuItem.getItemId() == R.id.menu_4g_conference_call) {
+      try {
+        QtiCallUtils.openConferenceUriDialerOr4gConferenceDialer(activity);
+      } catch (ActivityNotFoundException e) {
+        LogUtil.e("MainSearchController.onMenuItemClicked", "Activity not found. " + e);
+      } finally {
+        return true;
+      }
     }
     return false;
   }

@@ -29,7 +29,9 @@
 package com.android.incallui;
 
 import android.support.v4.app.FragmentManager;
+import android.support.v4.os.UserManagerCompat;
 import android.app.Activity;
+import android.content.ActivityNotFoundException;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -137,6 +139,7 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
 
      if (mCall != null && moreOptionsMap != null && mResources != null) {
        maybeUpdateManageConferenceInMap();
+       maybeUpdateAddParticipantInMap();
        maybeUpdateOneWayVideoOptionsInMap();
        maybeUpdateModifyCallInMap();
        maybeUpdateHideMeInMap();
@@ -221,7 +224,9 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
    public void optionSelected(@Nullable String text) {
      //callback for bottomsheet clicks
      LogUtil.d("BottomSheetHelper.optionSelected","text : " + text);
-     if (text.equals(mResources.getString(R.string.manageConferenceLabel))) {
+     if (text.equals(mResources.getString(R.string.add_participant_option_msg))) {
+       startAddParticipantActivity();
+     } else if (text.equals(mResources.getString(R.string.manageConferenceLabel))) {
        manageConferenceCall();
      } else if (text.equals(mResources.getString(R.string.qti_ims_hideMeText_unselected)) ||
          text.equals(mResources.getString(R.string.qti_ims_hideMeText_selected))) {
@@ -539,6 +544,26 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
          && primaryCallState != DialerCallState.CALL_WAITING
          && primaryCallState != DialerCallState.ONHOLD;
      moreOptionsMap.put(mResources.getString(R.string.dialpad_label), enable);
+   }
+
+   private boolean isAddParticipantSupported() {
+     return mCall != null && mCall.can(DialerCall.CAPABILITY_ADD_PARTICIPANT)
+         && UserManagerCompat.isUserUnlocked(mContext)
+         && !mCall.hasReceivedVideoUpgradeRequest();
+   }
+
+   private void maybeUpdateAddParticipantInMap() {
+     moreOptionsMap.put(mContext.getResources().getString(R.string.add_participant_option_msg),
+         isAddParticipantSupported());
+   }
+
+   private void startAddParticipantActivity() {
+     try {
+       mContext.startActivity(QtiCallUtils.getAddParticipantsIntent());
+     } catch (ActivityNotFoundException e) {
+       LogUtil.e("BottomSheetHelper.startAddParticipantActivity",
+           "Activity not found. Exception = " + e);
+     }
    }
 
    private void maybeUpdateOneWayVideoOptionsInMap() {

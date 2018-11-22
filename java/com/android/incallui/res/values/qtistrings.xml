@@ -53,6 +53,12 @@ IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <string name="qti_ims_onscreenConsultativeTransfer">Consultative Transfer</string>
     <string name="dialpad_label">Show dialpad"</string>
 
+    <!-- Option to add participant -->
+    <string name="add_participant_option_msg">Add participant</string>
+    <string name="select_your_option">Select your option:</string>
+    <string name="select_your_4g_dialer_cancel_option">Cancel</string>
+    <string name="conference_uri_dialer_option">1. Conference URI Dialer</string>
+    <string name="conference_4g_dialer_option">2. 4G Conference Dialer</string>
 
     <string name="video_rx_label">Video Rx</string>
     <string name="video_tx_label">Video Tx</string>
@@ -87,6 +93,10 @@ IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
        <item>false</item>
     </string-array>
 
+    <string-array name="add_participant_option">
+       <item>@string/add_participant_option_msg</item>
+       <item>false</item>
+    </string-array>
     <string-array name="video_rx">
        <item>@string/video_rx_label</item>
        <item>false</item>
@@ -109,6 +119,7 @@ IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
        <item>@array/deflect</item>
        <item>@array/transfer</item>
        <item>@array/show_dialpad</item>
+       <item>@array/add_participant_option</item>
        <item>@array/video_rx</item>
        <item>@array/video_tx</item>
        <item>@array/modify_call</item>

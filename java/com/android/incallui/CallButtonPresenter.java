@@ -226,13 +226,9 @@ public class CallButtonPresenter
 
   @Override
   public void muteClicked(boolean checked, boolean clickedByUser) {
-    if (call == null) {
-      return;
-    }
-
     LogUtil.i(
         "CallButtonPresenter", "turning on mute: %s, clicked by user: %s", checked, clickedByUser);
-    if (clickedByUser) {
+    if (clickedByUser  && call != null) {
       Logger.get(context)
           .logCallImpression(
               checked

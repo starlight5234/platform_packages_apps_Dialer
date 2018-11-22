@@ -29,11 +29,21 @@
 
 package com.android.incallui;
 
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.content.DialogInterface.OnClickListener;
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
+import android.content.res.Resources;
 import android.telecom.Connection.VideoProvider;
+import android.telephony.SubscriptionInfo;
+import android.telephony.TelephonyManager;
 import android.widget.Toast;
 import android.telecom.VideoProfile;
+import android.telephony.SubscriptionManager;
+import com.android.dialer.util.PermissionsUtil;
+import com.android.ims.ImsManager;
 import com.android.incallui.call.CallList;
 import com.android.incallui.call.DialerCall;
 import com.android.incallui.call.state.DialerCallState;
@@ -45,6 +55,9 @@ import org.codeaurora.ims.utils.QtiImsExtUtils;
 public class QtiCallUtils {
 
     private static String LOG_TAG = "QtiCallUtils";
+    //Maximum number of IMS phones in device.
+    private static final int MAX_IMS_PHONE_COUNT = 2;
+
    /**
      * Displays the string corresponding to the resourceId as a Toast on the UI
      */
@@ -219,6 +232,228 @@ public class QtiCallUtils {
             default:
                 return ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
         }
+    }
+
+   /**
+    * if true, conference dialer  is enabled.
+    */
+    public static boolean isConferenceUriDialerEnabled(Context context) {
+        if (!PermissionsUtil.hasPhonePermissions(context)) {
+            return false;
+        }
+
+        boolean isEnhanced4gLteModeSettingEnabled = false;
+        boolean isVolteEnabledByPlatform = false;
+        TelephonyManager telephonyManager =
+                (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+        for (int i = 0; i < telephonyManager.getPhoneCount(); i++) {
+            ImsManager imsMgr = ImsManager.getInstance(context, i);
+            isEnhanced4gLteModeSettingEnabled |=
+                   imsMgr.isEnhanced4gLteModeSettingEnabledByUser();
+            isVolteEnabledByPlatform |= imsMgr.isVolteEnabledByPlatform();
+        }
+        return isEnhanced4gLteModeSettingEnabled && isVolteEnabledByPlatform;
+    }
+
+   /**
+    * Whether ims is registered
+    * @param context of the activity
+    * @param int phoneId which need to check
+    * @return boolean whether ims is registered
+    */
+    private static boolean isImsRegistered(Context context, int phoneId,
+            TelephonyManager telephonyManager) {
+        SubscriptionManager subscriptionManager =
+                (SubscriptionManager) context.getSystemService(
+                Context.TELEPHONY_SUBSCRIPTION_SERVICE);
+        SubscriptionInfo subscriptionInfo =
+                subscriptionManager.getActiveSubscriptionInfoForSimSlotIndex(phoneId);
+        if (subscriptionInfo == null) {
+            return false;
+        }
+        int subId = subscriptionInfo.getSubscriptionId();
+        if (!SubscriptionManager.isValidSubscriptionId(subId)) {
+            Log.e(LOG_TAG, "isImsRegistered subId is invalid");
+            return false;
+        }
+        return telephonyManager.isImsRegistered(subId);
+    }
+
+   /**
+    * Show 4G Conference call menu option unless both SIMs are specific operators SIMs
+    * and both are not VoLTE/VT enabled.
+    * @param context of the activity.
+    * @return boolean whether should show 4G conference dialer menu option.
+    */
+    public static boolean show4gConferenceDialerMenuOption(Context context) {
+        if (!PermissionsUtil.hasPhonePermissions(context)) {
+            Log.i(LOG_TAG, "show4gConferenceDialerMenuOption no phone permissions");
+            return false;
+        }
+        Log.i(LOG_TAG, "inside show4gConferenceDialerMenuOption");
+        int unregisteredSpecificImsPhoneCount = 0;
+        TelephonyManager telephonyManager =
+                (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+        final int phoneCount = telephonyManager.getPhoneCount();
+        boolean isEnhanced4gLteModeSettingEnabled = false;
+        boolean isVolteEnabledByPlatform = false;
+        for (int i = 0; i < phoneCount; i++) {
+            final boolean isImsRegistered = isImsRegistered(context, i, telephonyManager);
+            Log.i(LOG_TAG, "phoneId = " + i + " isImsRegistered = " + isImsRegistered);
+            final boolean isCarrierConfigEnabled = QtiImsExtUtils.isCarrierConfigEnabled(i,
+                    context, "config_enable_conference_dialer");
+
+            if (isImsRegistered) {
+                return true;
+            } else if (!isImsRegistered && isCarrierConfigEnabled) {
+                unregisteredSpecificImsPhoneCount++;
+            } else if (!isCarrierConfigEnabled) {
+                ImsManager imsMgr = ImsManager.getInstance(context, i);
+                isEnhanced4gLteModeSettingEnabled |=
+                        imsMgr.isEnhanced4gLteModeSettingEnabledByUser();
+                isVolteEnabledByPlatform |= imsMgr.isVolteEnabledByPlatform();
+            }
+        }
+        Log.i(LOG_TAG, "unregisteredSpecificImsPhoneCount = " + unregisteredSpecificImsPhoneCount);
+        return unregisteredSpecificImsPhoneCount < MAX_IMS_PHONE_COUNT &&
+                (isEnhanced4gLteModeSettingEnabled && isVolteEnabledByPlatform);
+    }
+
+   /**
+    * Show Add to 4G Conference call option in Dialpad menu if at least one SIM is
+    * specific operators SIM and has VoLTE/VT enabled.
+    * @param context of the activity.
+    * @return boolean whether should show add to 4G conference call menu option.
+    */
+    public static boolean showAddTo4gConferenceCallOption(Context context) {
+        if (!PermissionsUtil.hasPhonePermissions(context)) {
+            return false;
+        }
+        TelephonyManager telephonyManager =
+                (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+        final int phoneCount = telephonyManager.getPhoneCount();
+        for (int i = 0; i < phoneCount; i++) {
+            final boolean isImsRegistered = isImsRegistered(context, i, telephonyManager);
+            Log.i(LOG_TAG, "phoneId = " + i + " isImsRegistered = " + isImsRegistered);
+            if (isImsRegistered && QtiImsExtUtils.isCarrierConfigEnabled(i, context,
+                    "config_enable_conference_dialer")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Open conference uri dialer or 4G conference dialer.
+     * @param context of the activity.
+     * @return void.
+     */
+    public static void openConferenceUriDialerOr4gConferenceDialer(Context context) {
+        if (!PermissionsUtil.hasPhonePermissions(context)) {
+            return;
+        }
+        boolean shallOpenOperator4gDialer = false;
+        int registeredImsPhoneCount = 0;
+        TelephonyManager telephonyManager =
+                (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+        final int phoneCount = telephonyManager.getPhoneCount();
+        for (int i = 0; i < phoneCount; i++) {
+            final boolean isImsRegistered = isImsRegistered(context, i, telephonyManager);
+            Log.i(LOG_TAG, "phoneId = " + i + " isImsRegistered = " + isImsRegistered);
+            if (isImsRegistered) {
+                registeredImsPhoneCount++;
+                if (QtiImsExtUtils.isCarrierConfigEnabled(i, context,
+                        "config_enable_conference_dialer")) {
+                    if (!shallOpenOperator4gDialer) {
+                        shallOpenOperator4gDialer = true;
+                    } else {
+                        //Both two subs have specific operators SIM.
+                        //Need to open the specific operators 4g Dialer.
+                        registeredImsPhoneCount--;
+                    }
+                }
+            }
+        }
+        Log.i(LOG_TAG, "registeredImsPhoneCount = " + registeredImsPhoneCount);
+        if((registeredImsPhoneCount < MAX_IMS_PHONE_COUNT) && shallOpenOperator4gDialer) {
+            //Launch 4G conference dialer: Specific Operator reg in IMS and only one sub reg in ims.
+            context.startActivity(getConferenceDialerIntent(null));
+        } else if (shallOpenOperator4gDialer && (registeredImsPhoneCount > 1)) {
+            //Launch user chosen 4G dialer: Specific Operator reg in IMS and another sub
+            //also reg in ims.
+            openUserSelected4GDialer(context);
+        } else {
+            //Launch conference URI dialer: Specific Operator not reg in IMS but other
+            //operator reg in ims.
+            context.startActivity(getConferenceDialerIntent());
+        }
+    }
+
+    /**
+    * Open user selected 4G dialer.
+    * @param context of the activity.
+    * @return void.
+    */
+    public static void openUserSelected4GDialer(Context context) {
+        Resources resources = context.getResources();
+        CharSequence options[] = new CharSequence[] {
+            resources.getString(R.string.conference_uri_dialer_option),
+            resources.getString(R.string.conference_4g_dialer_option)};
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        builder.setTitle(R.string.select_your_option);
+        builder.setItems(options, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                //The user clicked on options[which]
+                Log.d(LOG_TAG, "onClick : which option = " + which);
+                if (which == 1) {
+                    //Launch 4G conference dialer.
+                    context.startActivity(getConferenceDialerIntent(null));
+                } else {
+                    //Launch conference URI dialer:
+                    context.startActivity(getConferenceDialerIntent());
+                }
+            }
+            });
+        builder.setNegativeButton(R.string.select_your_4g_dialer_cancel_option,
+                new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                //The user clicked on Cancel
+            }
+        });
+        AlertDialog alertDialog = builder.create();
+        alertDialog.show();
+    }
+
+   /**
+    * get intent to start conference dialer
+    * with this intent, we can originate an conference call
+    */
+    public static Intent getConferenceDialerIntent() {
+        Intent intent = new Intent("org.codeaurora.confuridialer.ACTION_LAUNCH_CONF_URI_DIALER");
+        return intent;
+    }
+
+   /**
+    * get intent to start conference dialer
+    * with this intent, we can originate an conference call
+    */
+    public static Intent getConferenceDialerIntent(String number) {
+        Intent intent = new Intent("org.codeaurora.confdialer.ACTION_LAUNCH_CONF_DIALER");
+        intent.putExtra("confernece_number_key", number);
+        return intent;
+    }
+
+   /**
+    * used to get intent to start conference dialer
+    * with this intent, we can add participants to an existing conference call
+    */
+    public static Intent getAddParticipantsIntent() {
+        Intent intent = new Intent("org.codeaurora.confuridialer.ACTION_LAUNCH_CONF_URI_DIALER");
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.putExtra("add_participant", true);
+        return intent;
     }
 
     //Checks if DialerCall has video CRBT - an outgoing receive-only video call

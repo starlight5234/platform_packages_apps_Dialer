@@ -148,7 +148,8 @@ LOCAL_STATIC_ANDROID_LIBRARIES := \
 LOCAL_JAVA_LIBRARIES := \
 	dialer-auto-value-target \
 	org.apache.http.legacy \
-	ims-ext-common
+	ims-ext-common \
+        ims-common
 
 LOCAL_ANNOTATION_PROCESSORS := \
 	qti-dialer-auto-value \
