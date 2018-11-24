@@ -286,7 +286,7 @@ public class QtiCallUtils {
     * @return boolean whether should show 4G conference dialer menu option.
     */
     public static boolean show4gConferenceDialerMenuOption(Context context) {
-        if (!PermissionsUtil.hasPhonePermissions(context)) {
+        if (!PermissionsUtil.hasPhonePermissions(context) || hasConferenceCall()) {
             Log.i(LOG_TAG, "show4gConferenceDialerMenuOption no phone permissions");
             return false;
         }
@@ -326,7 +326,7 @@ public class QtiCallUtils {
     * @return boolean whether should show add to 4G conference call menu option.
     */
     public static boolean showAddTo4gConferenceCallOption(Context context) {
-        if (!PermissionsUtil.hasPhonePermissions(context)) {
+        if (!PermissionsUtil.hasPhonePermissions(context) || hasConferenceCall()) {
             return false;
         }
         TelephonyManager telephonyManager =
@@ -456,6 +456,18 @@ public class QtiCallUtils {
         return intent;
     }
 
+   /**
+    * used to get intent to start conference dialer
+    * with this intent, we can add participants to an existing conference call
+    */
+    public static Intent getAddParticipantsIntent(String number) {
+        Intent intent = new Intent("org.codeaurora.confdialer.ACTION_LAUNCH_CONF_DIALER");
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.putExtra("add_participant", true);
+        intent.putExtra("current_participant_list", number);
+        return intent;
+    }
+
     //Checks if DialerCall has video CRBT - an outgoing receive-only video call
     public static boolean hasVideoCrbtVoLteCall(Context context, DialerCall call) {
         if (context == null || !QtiImsExtUtils.isCarrierConfigEnabled(
@@ -487,5 +499,16 @@ public class QtiCallUtils {
                  context, "config_enable_video_crbt");
         return (videoCrbtConfig && call != null && call.getState() == DialerCallState.DIALING
                 && isVideoBidirectional(call));
+    }
+
+    //Checks if CallList has conference call
+    public static boolean hasConferenceCall() {
+        DialerCall activeCall = CallList.getInstance().getActiveCall();
+        boolean hasConfCall = activeCall != null ? activeCall.isConferenceCall() : false;
+        if (!hasConfCall) {
+            DialerCall bgCall = CallList.getInstance().getBackgroundCall();
+            hasConfCall = bgCall != null ? bgCall.isConferenceCall() : false;
+        }
+        return hasConfCall;
     }
 }

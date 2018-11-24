@@ -32,6 +32,7 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.os.UserManagerCompat;
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
+import android.content.Intent;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -46,6 +47,7 @@ import android.telecom.VideoProfile;
 import android.view.View;
 
 import com.android.dialer.common.LogUtil;
+import com.android.incallui.call.CallList;
 import com.android.dialer.util.CallUtil;
 import com.android.incallui.call.DialerCall;
 import com.android.incallui.call.state.DialerCallState;
@@ -54,6 +56,7 @@ import com.android.incallui.videotech.utils.VideoUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.List;
 
 import org.codeaurora.ims.QtiCallConstants;
 import org.codeaurora.ims.QtiImsExtListenerBaseImpl;
@@ -225,7 +228,12 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
      //callback for bottomsheet clicks
      LogUtil.d("BottomSheetHelper.optionSelected","text : " + text);
      if (text.equals(mResources.getString(R.string.add_participant_option_msg))) {
-       startAddParticipantActivity();
+       if (QtiImsExtUtils.isCarrierConfigEnabled(getPhoneId(), mContext,
+           "add_multi_participants_enabled")) {
+         startAddMultiParticipantActivity();
+       } else {
+         startAddParticipantActivity();
+       }
      } else if (text.equals(mResources.getString(R.string.manageConferenceLabel))) {
        manageConferenceCall();
      } else if (text.equals(mResources.getString(R.string.qti_ims_hideMeText_unselected)) ||
@@ -547,9 +555,41 @@ public class BottomSheetHelper implements PrimaryCallTracker.PrimaryCallChangeLi
    }
 
    private boolean isAddParticipantSupported() {
-     return mCall != null && mCall.can(DialerCall.CAPABILITY_ADD_PARTICIPANT)
+     boolean showAddParticipant = mCall != null
+         && mCall.can(DialerCall.CAPABILITY_ADD_PARTICIPANT)
          && UserManagerCompat.isUserUnlocked(mContext)
          && !mCall.hasReceivedVideoUpgradeRequest();
+     if (QtiImsExtUtils.isCarrierConfigEnabled(getPhoneId(), mContext,
+         "add_participant_only_in_conference")) {
+       showAddParticipant = showAddParticipant && (mCall != null) && (mCall.isConferenceCall());
+     }
+     return showAddParticipant;
+   }
+
+   private void startAddMultiParticipantActivity() {
+     Intent intent = QtiCallUtils.getAddParticipantsIntent(null);
+     List<String> childCallIdList = (mCall != null) ? mCall.getChildCallIds() : null;
+     if (childCallIdList != null) {
+       StringBuffer sb = new StringBuffer();
+       for (String tmp: childCallIdList) {
+         String number = CallList.getInstance().getCallById(tmp).getNumber();
+         if (number.contains(";")) {
+           String[] temp = number.split(";");
+           number = temp[0];
+         }
+         sb.append(number).append(";");
+       }
+       intent.putExtra("current_participant_list", sb.toString());
+     } else {
+       LogUtil.e("BottomSheetHelper.startAddMultiParticipantActivity",
+           "sendAddMultiParticipantsIntent, childCallIdList null.");
+     }
+     try {
+       mContext.startActivity(intent);
+     } catch (ActivityNotFoundException e) {
+       LogUtil.e("BottomSheetHelper.startAddMultiParticipantActivity",
+           "Activity not found. Exception = " + e);
+     }
    }
 
    private void maybeUpdateAddParticipantInMap() {

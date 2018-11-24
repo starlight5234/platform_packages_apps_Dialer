@@ -24,12 +24,17 @@ import android.view.View;
 import android.widget.PopupMenu;
 import com.android.dialer.simulator.Simulator;
 import com.android.dialer.simulator.SimulatorComponent;
+import com.android.incallui.QtiCallUtils;
+
 
 /** Popup menu accessible from the search bar */
 public final class MainToolbarMenu extends PopupMenu {
 
+  private final Context context;
+
   public MainToolbarMenu(Context context, View anchor) {
     super(context, anchor, Gravity.NO_GRAVITY, R.attr.actionOverflowMenuStyle, 0);
+    this.context = context;
   }
 
   public void showClearFrequents(boolean show) {
@@ -45,5 +50,12 @@ public final class MainToolbarMenu extends PopupMenu {
     } else {
       simulatorMenuItem.setVisible(false);
     }
+  }
+
+  @Override
+  public void show() {
+    getMenu().findItem(R.id.menu_4g_conference_call).setVisible(
+        QtiCallUtils.show4gConferenceDialerMenuOption(context));
+    super.show();
   }
 }

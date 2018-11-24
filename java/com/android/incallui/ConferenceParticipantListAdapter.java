@@ -50,6 +50,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import org.codeaurora.ims.utils.QtiImsExtUtils;
+
 /** Adapter for a ListView containing conference call participant information. */
 public class ConferenceParticipantListAdapter extends BaseAdapter {
 
@@ -248,6 +250,33 @@ public class ConferenceParticipantListAdapter extends BaseAdapter {
     return result;
   }
 
+  private static int getResourceforState(int state){
+      int res;
+      switch (state){
+          case DialerCallState.ACTIVE:
+              res = R.string.call_state_active;
+              break;
+          case DialerCallState.NEW:
+          case DialerCallState.IDLE:
+          case DialerCallState.DIALING:
+          case DialerCallState.REDIALING:
+              res = R.string.call_state_dialing;
+              break;
+          case DialerCallState.ONHOLD:
+              res = R.string.call_state_holding;
+              break;
+          case DialerCallState.DISCONNECTING:
+              res = R.string.call_state_disconnecting;
+              break;
+          case DialerCallState.DISCONNECTED:
+              res = R.string.call_state_disconnected;
+              break;
+          default:
+              res = R.string.call_state_unknown;
+      }
+      return res;
+  }
+
   /**
    * Replaces the contact info for a participant and triggers a refresh of the UI.
    *
@@ -298,6 +327,11 @@ public class ConferenceParticipantListAdapter extends BaseAdapter {
       setViewsNotOnHold(photoView, statusTextView, nameTextView, numberTextView);
     }
 
+    if (QtiImsExtUtils.isCarrierConfigEnabled(BottomSheetHelper.getInstance().getPhoneId(),
+            getContext(), "config_conference_call_show_participant_status")) {
+        final TextView stateTextView = (TextView) view.findViewById(R.id.conferenceCallerState);
+        stateTextView.setText(getResourceforState(callState));
+    }
     endButton.setVisibility(thisRowCanDisconnect ? View.VISIBLE : View.GONE);
     if (thisRowCanDisconnect) {
       endButton.setOnClickListener(disconnectListener);
@@ -379,6 +413,7 @@ public class ConferenceParticipantListAdapter extends BaseAdapter {
    * @param conferenceParticipants The calls which make up the conference participants.
    */
   private void updateParticipantInfo(List<DialerCall> conferenceParticipants) {
+    Log.d(this, "updateParticipantInfo: " + conferenceParticipants);
     final ContactInfoCache cache = ContactInfoCache.getInstance(getContext());
     boolean newParticipantAdded = false;
     Set<String> newCallIds = new ArraySet<>(conferenceParticipants.size());
