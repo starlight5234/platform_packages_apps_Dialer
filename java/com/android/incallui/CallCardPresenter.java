@@ -441,6 +441,37 @@ public class CallCardPresenter
         || inCallScreen.isManageConferenceVisible() != shouldShowManageConference();
   }
 
+  private String getPrimaryInfoLocation(ContactCacheEntry contactInfo) {
+    if (contactInfo != null || contactInfo.location != null) {
+      return contactInfo.location;
+    }
+    return "";
+  }
+
+  /**
+   * Returns the label with location for Active Call except conference call and
+   * calling from the saved contact.
+   */
+  private String getLabelWithLocation() {
+    String label = getConnectionLabel();
+    if (primaryContactInfo != null) {
+      String name = getNameForCall(primaryContactInfo);
+      String primaryLocation = getPrimaryInfoLocation(primaryContactInfo);
+      boolean nameIsNumber = name != null && !name.equals(primaryContactInfo.number);
+      boolean isConferenceCall = primary != null && primary.isConferenceCall();
+      boolean isEmergencyCall =  primary != null && primary.isEmergencyCall();
+      if (!(nameIsNumber || isConferenceCall) && isPrimaryCallActive()) {
+        label += "  ";
+        if (isEmergencyCall) {
+          label += primary.getNumber();
+        } else {
+          label += primaryLocation;
+        }
+      }
+    }
+    return label;
+  }
+
   private void updatePrimaryCallState() {
     if (getUi() != null && primary != null) {
       boolean isWorkCall =
@@ -458,6 +489,8 @@ public class CallCardPresenter
       boolean isConfCall = (primary.isConferenceCall() || primary.isIncomingConfCall())
           && !primary.hasProperty(Details.PROPERTY_GENERIC_CONFERENCE);
 
+      String label = getLabelWithLocation();
+
       // Check for video state change and update the visibility of the contact photo.  The contact
       // photo is hidden when the incoming video surface is shown.
       // The contact photo visibility can also change in setPrimary().
@@ -471,7 +504,7 @@ public class CallCardPresenter
                       && primary.isVideoCall())
                   .setSessionModificationState(primary.getVideoTech().getSessionModificationState())
                   .setDisconnectCause(primary.getDisconnectCause())
-                  .setConnectionLabel(getConnectionLabel())
+                  .setConnectionLabel(label)
                   .setPrimaryColor(
                       InCallPresenter.getInstance().getThemeColorManager().getPrimaryColor())
                   .setSimSuggestionReason(getSimSuggestionReason())
