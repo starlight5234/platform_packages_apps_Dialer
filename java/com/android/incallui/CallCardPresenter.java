@@ -445,7 +445,7 @@ public class CallCardPresenter
   }
 
   private String getPrimaryInfoLocation(ContactCacheEntry contactInfo) {
-    if (contactInfo != null || contactInfo.location != null) {
+    if (contactInfo != null && contactInfo.location != null) {
       return contactInfo.location;
     }
     return "";
@@ -493,6 +493,7 @@ public class CallCardPresenter
           && !primary.hasProperty(Details.PROPERTY_GENERIC_CONFERENCE);
 
       String label = getLabelWithLocation();
+      String primaryLocation = getPrimaryInfoLocation(primaryContactInfo);
 
       // Check for video state change and update the visibility of the contact photo.  The contact
       // photo is hidden when the incoming video surface is shown.
@@ -507,7 +508,9 @@ public class CallCardPresenter
                       && primary.isVideoCall())
                   .setSessionModificationState(primary.getVideoTech().getSessionModificationState())
                   .setDisconnectCause(primary.getDisconnectCause())
-                  .setConnectionLabel(label)
+                  .setConnectionLabel(getConnectionLabel() + "  " + (isPrimaryCallActive() ?
+                      (isOutgoingEmergencyCall(primary) ?
+                      primary.getNumber() : primaryLocation) : ""))
                   .setPrimaryColor(
                       InCallPresenter.getInstance().getThemeColorManager().getPrimaryColor())
                   .setSimSuggestionReason(getSimSuggestionReason())
@@ -998,7 +1001,7 @@ public class CallCardPresenter
       }
     }
 
-    return null;
+    return primary.getCallProviderIcon();
   }
 
   private boolean hasOutgoingGatewayCall() {

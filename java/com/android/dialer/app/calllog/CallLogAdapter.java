@@ -21,6 +21,7 @@ import android.content.ContentUris;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnCancelListener;
 import android.content.res.Resources;
+import android.graphics.drawable.Drawable;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -64,6 +65,7 @@ import com.android.dialer.blocking.FilteredNumberAsyncQueryHandler;
 import com.android.dialer.calldetails.CallDetailsEntries;
 import com.android.dialer.calldetails.CallDetailsEntries.CallDetailsEntry;
 import com.android.dialer.calllogutils.CallbackActionHelper.CallbackAction;
+import com.android.dialer.calllogutils.PhoneAccountUtils;
 import com.android.dialer.calllogutils.PhoneCallDetails;
 import com.android.dialer.common.Assert;
 import com.android.dialer.common.FragmentUtils.FragmentUtilListener;
@@ -1075,6 +1077,7 @@ public class CallLogAdapter extends GroupingListAdapter
     views.displayNumber = details.displayNumber;
     views.accountHandle = accountHandle;
     details.accountHandle = accountHandle;
+    details.accountIcon = PhoneAccountUtils.getAccountIcon(this.activity, accountHandle);
 
     if (!TextUtils.isEmpty(info.name) || !TextUtils.isEmpty(info.nameAlternative)) {
       details.contactUri = info.lookupUri;

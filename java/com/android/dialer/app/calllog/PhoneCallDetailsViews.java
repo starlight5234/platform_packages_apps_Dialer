@@ -19,6 +19,7 @@ package com.android.dialer.app.calllog;
 import android.content.Context;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.ImageView;
 import com.android.dialer.app.R;
 import com.android.dialer.calllogutils.CallTypeIconsView;
 import com.android.dialer.widget.BidiTextView;
@@ -35,6 +36,7 @@ public final class PhoneCallDetailsViews {
   public final TextView voicemailTranscriptionBrandingView;
   public final View voicemailTranscriptionRatingView;
   public final TextView callAccountLabel;
+  public final ImageView callAccountIcon;
 
   private PhoneCallDetailsViews(
       BidiTextView nameView,
@@ -45,6 +47,7 @@ public final class PhoneCallDetailsViews {
       TextView voicemailTranscriptionView,
       TextView voicemailTranscriptionBrandingView,
       View voicemailTranscriptionRatingView,
+      ImageView callAccountIcon,
       TextView callAccountLabel) {
     this.nameView = nameView;
     this.callTypeView = callTypeView;
@@ -54,6 +57,7 @@ public final class PhoneCallDetailsViews {
     this.voicemailTranscriptionView = voicemailTranscriptionView;
     this.voicemailTranscriptionBrandingView = voicemailTranscriptionBrandingView;
     this.voicemailTranscriptionRatingView = voicemailTranscriptionRatingView;
+    this.callAccountIcon = callAccountIcon;
     this.callAccountLabel = callAccountLabel;
   }
 
@@ -74,6 +78,7 @@ public final class PhoneCallDetailsViews {
         (TextView) view.findViewById(R.id.voicemail_transcription),
         (TextView) view.findViewById(R.id.voicemail_transcription_branding),
         view.findViewById(R.id.voicemail_transcription_rating),
+        (ImageView) view.findViewById(R.id.call_account_icon),
         (TextView) view.findViewById(R.id.call_account_label));
   }
 
@@ -87,6 +92,7 @@ public final class PhoneCallDetailsViews {
         new TextView(context),
         new TextView(context),
         new View(context),
+        new ImageView(context),
         new TextView(context));
   }
 }

@@ -64,6 +64,9 @@ import android.text.TextUtils;
 import android.text.style.ForegroundColorSpan;
 import com.android.contacts.common.ContactsUtils;
 import com.android.contacts.common.ContactsUtils.UserType;
+import com.android.dialer.location.GeoUtil;
+import com.android.dialer.lettertile.LetterTileDrawable;
+import com.android.dialer.contactphoto.BitmapUtil;
 import com.android.dialer.common.Assert;
 import com.android.dialer.common.LogUtil;
 import com.android.dialer.configprovider.ConfigProviderComponent;
@@ -246,9 +249,16 @@ public class StatusBarNotifier
   @RequiresPermission(Manifest.permission.READ_PHONE_STATE)
   private void showNotification(final DialerCall call) {
     Trace.beginSection("StatusBarNotifier.showNotification");
-    final boolean isIncoming =
-        (call.getState() == DialerCallState.INCOMING
-            || call.getState() == DialerCallState.CALL_WAITING);
+    final boolean isGeocoderLocationNeeded =
+        (call.getState() == DialerCallState.INCOMING ||
+        call.getState() == DialerCallState.CALL_WAITING ||
+        call.getState() == DialerCallState.DIALING ||
+        call.getState() == DialerCallState.CONNECTING ||
+        call.getState() == DialerCallState.SELECT_PHONE_ACCOUNT);
+    LogUtil.i(
+        "StatusBarNotifier.buildAndSendNotification",
+        "showNotification isGeocoderLocationNeeded = " + isGeocoderLocationNeeded);
+
     setStatusBarCallListener(new StatusBarCallListener(call));
 
     // we make a call to the contact info cache to query for supplemental data to what the
@@ -256,7 +266,7 @@ public class StatusBarNotifier
     // This callback will always get called immediately and synchronously with whatever data
     // it has available, and may make a subsequent call later (same thread) if it had to
     // call into the contacts provider for more data.
-    contactInfoCache.findInfo(call, isIncoming, this);
+    contactInfoCache.findInfo(call, isGeocoderLocationNeeded, this);
     Trace.endSection();
   }
 
@@ -561,17 +571,20 @@ public class StatusBarNotifier
           context, call.hasProperty(Details.PROPERTY_GENERIC_CONFERENCE));
     }
 
-    String preferredName =
-        ContactsComponent.get(context)
-            .contactDisplayPreferences()
-            .getDisplayName(contactInfo.namePrimary, contactInfo.nameAlternative);
-    if (TextUtils.isEmpty(preferredName)) {
-      return TextUtils.isEmpty(contactInfo.number)
+    if (TextUtils.isEmpty(contactInfo.namePrimary)) {
+      String contactNumberDisplayed = TextUtils.isEmpty(contactInfo.number)
+          ? ""
+          : contactInfo.number.toString();
+      String location_info = GeoUtil.getGeocodedLocationFor(this.context, contactNumberDisplayed);
+      if (!TextUtils.isEmpty(location_info)){
+        contactNumberDisplayed =  contactNumberDisplayed + " (" + location_info + ")";
+      }
+      return TextUtils.isEmpty(contactNumberDisplayed)
           ? null
           : BidiFormatter.getInstance()
-              .unicodeWrap(contactInfo.number, TextDirectionHeuristics.LTR);
+              .unicodeWrap(contactNumberDisplayed, TextDirectionHeuristics.LTR);
     }
-    return preferredName;
+    return contactInfo.namePrimary;
   }
 
   private void addPersonReference(

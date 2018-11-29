@@ -461,6 +461,16 @@ public class CallerInfo {
     return this;
   }
 
+  /* package */ CallerInfo markAsEmergency(Context context, String number) {
+    number = PhoneNumberUtils.normalizeNumber(number);
+    name = context.getString(R.string.emergency_call_dialog_number_for_display);
+    phoneNumber = number;
+
+    //photoResource = R.drawable.img_phone;
+    isEmergency = true;
+    return this;
+  }
+
   /**
    * Mark this CallerInfo as a voicemail call. The voicemail label is obtained from the telephony
    * manager. Caller must hold the READ_PHONE_STATE permission otherwise the phoneNumber will be set

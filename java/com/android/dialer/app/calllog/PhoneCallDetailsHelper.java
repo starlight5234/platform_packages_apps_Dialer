@@ -20,6 +20,7 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.res.Resources;
+import android.graphics.drawable.Drawable;
 import android.graphics.Typeface;
 import android.net.Uri;
 import android.provider.CallLog.Calls;
@@ -189,6 +190,15 @@ public class PhoneCallDetailsHelper
 
     // Set the call count, location, date and if voicemail, set the duration.
     setDetailText(views, callCount, details);
+
+    //set the account icon if it exists.
+    Drawable icon = details.accountIcon;
+    if (icon != null) {
+      views.callAccountIcon.setVisibility(View.VISIBLE);
+      views.callAccountIcon.setImageDrawable(icon);
+    } else {
+      views.callAccountIcon.setVisibility(View.GONE);
+    }
 
     // Set the account label if it exists.
     String accountLabel = callLogCache.getAccountLabel(details.accountHandle);

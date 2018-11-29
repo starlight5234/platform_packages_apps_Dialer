@@ -479,6 +479,13 @@ public class CallerInfoAsyncQuery {
             // Note we're setting the phone number here (refer to javadoc
             // comments at the top of CallerInfo class).
             callerInfo = new CallerInfo().markAsEmergency(queryContext);
+            if (this.queryContext.getResources().getBoolean(R.bool.mark_emergency_call)) {
+              Log.d(this, "Emergency Number and Mark Emergency Number enabled");
+              callerInfo = new CallerInfo().markAsEmergency(this.queryContext,
+                  cw.number);
+            } else {
+              callerInfo = new CallerInfo().markAsEmergency(this.queryContext);
+            }
           } else if (cw.event == EVENT_VOICEMAIL_NUMBER) {
             callerInfo = new CallerInfo().markAsVoiceMail(queryContext);
           } else {

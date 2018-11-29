@@ -20,6 +20,7 @@ import android.Manifest.permission;
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.content.Context;
+import android.graphics.drawable.Drawable;
 import android.hardware.camera2.CameraCharacteristics;
 import android.net.Uri;
 import android.os.Build;
@@ -188,6 +189,7 @@ public class DialerCall implements VideoTechListener, StateChangedListener, Capa
   private boolean didShowCameraPermission;
   private boolean didDismissVideoChargesAlertDialog;
   private PersistableBundle carrierConfig;
+  private Drawable callProviderIcon;
   private String callProviderLabel;
   private String callbackNumber;
   private int cameraDirection = CameraDirection.CAMERA_DIRECTION_UNKNOWN;
@@ -667,14 +669,20 @@ public class DialerCall implements VideoTechListener, StateChangedListener, Capa
         if (phoneAccount != null) {
           isCallSubjectSupported =
               phoneAccount.hasCapabilities(PhoneAccount.CAPABILITY_CALL_SUBJECT);
-          final int simAccounts = TelecomUtil.getSubscriptionPhoneAccounts(context).size();
           if (phoneAccount.hasCapabilities(PhoneAccount.CAPABILITY_SIM_SUBSCRIPTION)) {
-            cacheCarrierConfiguration(phoneAccountHandle);
+              cacheCarrierConfiguration(phoneAccountHandle);
           }
+          final int simAccounts = TelecomUtil.getSubscriptionPhoneAccounts(context).size();
           if (phoneAccount.getLabel() != null && simAccounts > 1) {
               callProviderLabel = phoneAccount.getLabel().toString();
           } else {
               callProviderLabel = "";
+          }
+
+          if (phoneAccount.getIcon() != null && simAccounts > 1) {
+            callProviderIcon = phoneAccount.getIcon().loadDrawable(context);
+          } else {
+            callProviderIcon = null;
           }
         }
       }
@@ -1559,6 +1567,11 @@ public class DialerCall implements VideoTechListener, StateChangedListener, Capa
   /** Return the string label to represent the call provider */
   public String getCallProviderLabel() {
     return callProviderLabel;
+  }
+
+  /** Return the Drawable Icon to represent the call provider */
+  public Drawable getCallProviderIcon() {
+    return callProviderIcon;
   }
 
   private PhoneAccount getPhoneAccount() {
