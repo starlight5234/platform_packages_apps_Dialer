@@ -49,6 +49,12 @@ public class TelephonyManagerCompat {
       "android.telephony.event.EVENT_NOTIFY_INTERNATIONAL_CALL_ON_WFC";
   public static final String EVENT_CALL_FORWARDED = "android.telephony.event.EVENT_CALL_FORWARDED";
 
+  public static final String EVENT_SUPPLEMENTARY_SERVICE_NOTIFICATION =
+      "android.telephony.event.EVENT_SUPPLEMENTARY_SERVICE_NOTIFICATION";
+
+  public static final String EXTRA_NOTIFICATION_MESSAGE =
+      "android.telephony.extra.NOTIFICATION_MESSAGE";
+
   public static final String TELEPHONY_MANAGER_CLASS = "android.telephony.TelephonyManager";
 
   private static final String SECRET_CODE_ACTION = "android.provider.Telephony.SECRET_CODE";

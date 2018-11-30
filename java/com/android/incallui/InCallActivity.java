@@ -28,6 +28,7 @@ import android.content.res.Configuration;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.GradientDrawable.Orientation;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.Trace;
 import android.support.annotation.ColorInt;
 import android.support.annotation.FloatRange;
@@ -105,8 +106,12 @@ import com.google.common.util.concurrent.ListenableFuture;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 /** Version of {@link InCallActivity} that shows the new UI */
 public class InCallActivity extends TransactionSafeFragmentActivity
@@ -159,6 +164,11 @@ public class InCallActivity extends TransactionSafeFragmentActivity
   @DialpadRequestType private int showDialpadRequest = DIALPAD_REQUEST_NONE;
   private SpeakEasyCallManager speakEasyCallManager;
   private DialogFragment rttRequestDialogFragment;
+
+  final Handler mSuplSvcToastShowHandler = new Handler();
+  Set<String> mSuplSvcMessages = Collections.synchronizedSet(new HashSet<String>());
+  Toast mSuplSvcToast = null;
+  private static final int TOAST_SHOW_LONG_DURATION_MILLIS = 4000;
 
   public static Intent getIntent(
       Context context, boolean showDialpad, boolean newOutgoingCall, boolean isForFullScreen) {
@@ -565,6 +575,7 @@ public class InCallActivity extends TransactionSafeFragmentActivity
 
     InCallPresenter.getInstance().unsetActivity(this);
     InCallPresenter.getInstance().updateIsChangingConfigurations();
+    mSuplSvcToastShowHandler.removeCallbacks(mSuplSvcToastShowRunnable);
     Trace.endSection();
   }
 
@@ -1204,6 +1215,40 @@ public class InCallActivity extends TransactionSafeFragmentActivity
     LogUtil.enterBlock("InCallActivity.showDialogForRttRequest");
     rttRequestDialogFragment = RttRequestDialogFragment.newInstance(call.getId(), rttRequestId);
     rttRequestDialogFragment.show(getSupportFragmentManager(), Tags.RTT_REQUEST_DIALOG);
+  }
+
+  public void showSuplServiceMessageToast(String suplNotificationMessage) {
+      showSuplSvcToast(suplNotificationMessage);
+  }
+
+  final Runnable mSuplSvcToastShowRunnable = new Runnable() {
+      @Override
+      public void run() {
+          mSuplSvcToast.cancel();
+          mSuplSvcToast = null;
+          if (mSuplSvcMessages.size() > 0) {
+              Iterator<String> itr = mSuplSvcMessages.iterator();
+              String msg = itr.next();
+              mSuplSvcMessages.remove(msg);
+              showSuplSvcToast(msg);
+          }
+      }
+  };
+
+  private void showSuplSvcToast(String suplNotificationMessage) {
+      if (mSuplSvcToast == null) {
+          LogUtil.i("InCallActivity.showSuplSvcToast",
+                  "Showing toast: %s", suplNotificationMessage);
+          mSuplSvcToast = Toast.makeText(this, suplNotificationMessage, Toast.LENGTH_LONG);
+          mSuplSvcToast.getWindowParams().flags |= WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED;
+          mSuplSvcToast.show();
+          mSuplSvcToastShowHandler.postDelayed(mSuplSvcToastShowRunnable,
+                  TOAST_SHOW_LONG_DURATION_MILLIS);
+      } else {
+          // Already one supplementary message toast showing, now add this message to set and
+          // wait for previous toast show to finish.
+          mSuplSvcMessages.add(suplNotificationMessage);
+      }
   }
 
   public void hideMainInCallFragment() {

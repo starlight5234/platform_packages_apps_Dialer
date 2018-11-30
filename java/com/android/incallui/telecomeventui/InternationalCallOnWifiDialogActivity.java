@@ -98,4 +98,7 @@ public class InternationalCallOnWifiDialogActivity extends AppCompatActivity
 
   @Override
   public void onInternationalCallOnWifi(@NonNull DialerCall call) {}
+
+  @Override
+  public void onSuplServiceMessage(String suplNotificationMessage) {}
 }
