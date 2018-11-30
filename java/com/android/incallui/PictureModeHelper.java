@@ -562,6 +562,9 @@ public class PictureModeHelper implements InCallDetailsListener,
     @Override
     public void onSessionModificationStateChange(DialerCall call) {}
 
+    @Override
+    public void onSuplServiceMessage(String suplNotificationMessage) {}
+
     public void updateBlurredImageView(
       TextureView textureView,
       ImageView blurredImageView,
