@@ -65,6 +65,7 @@ import com.android.dialer.blocking.FilteredNumberAsyncQueryHandler;
 import com.android.dialer.calldetails.CallDetailsEntries;
 import com.android.dialer.calldetails.CallDetailsEntries.CallDetailsEntry;
 import com.android.dialer.calllogutils.CallbackActionHelper.CallbackAction;
+import com.android.dialer.calllogutils.CallTypeHelper;
 import com.android.dialer.calllogutils.PhoneAccountUtils;
 import com.android.dialer.calllogutils.PhoneCallDetails;
 import com.android.dialer.common.Assert;
@@ -400,7 +401,8 @@ public class CallLogAdapter extends GroupingListAdapter
             currentlyExpandedPosition = RecyclerView.NO_POSITION;
             currentlyExpandedRowId = NO_EXPANDED_LIST_ITEM;
           } else {
-            if (viewHolder.callType == CallLog.Calls.MISSED_TYPE) {
+            if (viewHolder.callType == CallLog.Calls.MISSED_TYPE ||
+                viewHolder.callType == CallTypeHelper.MISSED_IMS_TYPE) {
               CallLogAsyncTaskUtil.markCallAsRead(activity, viewHolder.callIds);
               if (activityType == ACTIVITY_TYPE_DIALTACTS) {
                 Assert.checkState(
@@ -990,7 +992,8 @@ public class CallLogAdapter extends GroupingListAdapter
     views.numberPresentation = numberPresentation;
 
     if (details.callTypes[0] == CallLog.Calls.VOICEMAIL_TYPE
-        || details.callTypes[0] == CallLog.Calls.MISSED_TYPE) {
+        || details.callTypes[0] == CallLog.Calls.MISSED_TYPE
+        || details.callTypes[0] == CallTypeHelper.MISSED_IMS_TYPE) {
       details.isRead = cursor.getInt(CallLogQuery.IS_READ) == 1;
     }
     views.callType = cursor.getInt(CallLogQuery.CALL_TYPE);

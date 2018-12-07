@@ -34,6 +34,7 @@ import android.provider.VoicemailContract.Status;
 import android.provider.VoicemailContract.Voicemails;
 import android.text.TextUtils;
 import com.android.contacts.common.database.NoNullCursorAsyncQueryHandler;
+import com.android.dialer.calllogutils.CallTypeHelper;
 import com.android.dialer.common.LogUtil;
 import com.android.dialer.phonenumbercache.CallLogQuery;
 import com.android.dialer.telecom.TelecomUtil;
@@ -183,8 +184,25 @@ public class CallLogQueryHandler extends NoNullCursorAsyncQueryHandler {
     }
 
     if (callType > CALL_TYPE_ALL) {
-      where.append(" AND (").append(Calls.TYPE).append(" = ?)");
+      if (where.length() > 0) {
+        where.append(" AND ");
+      }
+
+      if ((callType == Calls.INCOMING_TYPE) || (callType == Calls.OUTGOING_TYPE)
+              || (callType == Calls.MISSED_TYPE)) {
+        where.append(String.format("(%s = ? OR %s = ?)",
+                Calls.TYPE, Calls.TYPE));
+      } else {
+        where.append(String.format("(%s = ?)", Calls.TYPE));
+      }
       selectionArgs.add(Integer.toString(callType));
+      if (callType == Calls.INCOMING_TYPE) {
+        selectionArgs.add(Integer.toString(CallTypeHelper.INCOMING_IMS_TYPE));
+      } else if (callType == Calls.OUTGOING_TYPE) {
+        selectionArgs.add(Integer.toString(CallTypeHelper.OUTGOING_IMS_TYPE));
+      } else if (callType == Calls.MISSED_TYPE) {
+        selectionArgs.add(Integer.toString(CallTypeHelper.MISSED_IMS_TYPE));
+      }
     } else {
       where.append(" AND NOT ");
       where.append("(" + Calls.TYPE + " = " + Calls.VOICEMAIL_TYPE + ")");
@@ -320,10 +338,15 @@ public class CallLogQueryHandler extends NoNullCursorAsyncQueryHandler {
         + " = 0 OR "
         + Calls.IS_READ
         + " IS NULL"
-        + " AND "
+        + " AND ("
         + Calls.TYPE
         + " = "
-        + Calls.MISSED_TYPE;
+        + Calls.MISSED_TYPE
+        + " OR "
+        + Calls.TYPE
+        + " = "
+        + CallTypeHelper.MISSED_IMS_TYPE
+        + ")";
   }
 
   private void updateVoicemailStatus(Cursor statusCursor) {

@@ -36,6 +36,7 @@ import com.android.dialer.calllog.ui.menu.NewCallLogMenu;
 import com.android.dialer.calllogutils.CallLogEntryDescriptions;
 import com.android.dialer.calllogutils.CallLogEntryText;
 import com.android.dialer.calllogutils.CallLogRowActions;
+import com.android.dialer.calllogutils.CallTypeHelper;
 import com.android.dialer.calllogutils.PhoneAccountUtils;
 import com.android.dialer.calllogutils.PhotoInfoBuilder;
 import com.android.dialer.common.concurrent.DialerExecutorComponent;
@@ -180,7 +181,8 @@ final class NewCallLogViewHolder extends RecyclerView.ViewHolder {
     // Show missed call styling if the most recent call in the group was missed and it is still
     // marked as not read. The "NEW" column is presumably used for notifications and voicemails
     // only.
-    return row.getCallType() == Calls.MISSED_TYPE && !row.getIsRead();
+    return (row.getCallType() == Calls.MISSED_TYPE ||
+            row.getCallType() == CallTypeHelper.MISSED_IMS_TYPE) && !row.getIsRead();
   }
 
   private void setPhoto(CoalescedRow row) {
@@ -225,13 +227,16 @@ final class NewCallLogViewHolder extends RecyclerView.ViewHolder {
     @DrawableRes int resId;
     switch (row.getCallType()) {
       case Calls.INCOMING_TYPE:
+      case CallTypeHelper.INCOMING_IMS_TYPE:
       case Calls.ANSWERED_EXTERNALLY_TYPE:
         resId = R.drawable.quantum_ic_call_received_vd_theme_24;
         break;
       case Calls.OUTGOING_TYPE:
+      case CallTypeHelper.OUTGOING_IMS_TYPE:
         resId = R.drawable.quantum_ic_call_made_vd_theme_24;
         break;
       case Calls.MISSED_TYPE:
+      case CallTypeHelper.MISSED_IMS_TYPE:
         resId = R.drawable.quantum_ic_call_missed_vd_theme_24;
         break;
       case Calls.VOICEMAIL_TYPE:

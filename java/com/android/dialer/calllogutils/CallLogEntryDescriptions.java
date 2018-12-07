@@ -23,6 +23,7 @@ import android.telecom.PhoneAccountHandle;
 import android.telephony.PhoneNumberUtils;
 import android.text.TextUtils;
 import com.android.dialer.calllog.model.CoalescedRow;
+import com.android.dialer.calllogutils.CallTypeHelper;
 import com.android.dialer.telecom.TelecomUtil;
 import com.android.dialer.time.Clock;
 import com.google.common.collect.Collections2;
@@ -106,11 +107,14 @@ public final class CallLogEntryDescriptions {
   private static @PluralsRes int getPrimaryDescriptionResIdForCallType(CoalescedRow row) {
     switch (row.getCallType()) {
       case Calls.INCOMING_TYPE:
+      case CallTypeHelper.INCOMING_IMS_TYPE:
       case Calls.ANSWERED_EXTERNALLY_TYPE:
         return R.plurals.a11y_new_call_log_entry_answered_call;
       case Calls.OUTGOING_TYPE:
+      case CallTypeHelper.OUTGOING_IMS_TYPE:
         return R.plurals.a11y_new_call_log_entry_outgoing_call;
       case Calls.MISSED_TYPE:
+      case CallTypeHelper.MISSED_IMS_TYPE:
         return R.plurals.a11y_new_call_log_entry_missed_call;
       case Calls.VOICEMAIL_TYPE:
         throw new IllegalStateException("Voicemails not expected in call log");

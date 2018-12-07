@@ -20,6 +20,7 @@ import android.preference.Preference;
 import android.preference.Preference.OnPreferenceChangeListener;
 import android.provider.CallLog.Calls;
 import android.support.annotation.Nullable;
+import com.android.dialer.calllogutils.CallTypeHelper;
 import com.android.dialer.DialerPhoneNumber;
 import com.android.dialer.logging.ContactLookupResult;
 import com.android.dialer.logging.ContactSource;
@@ -186,6 +187,7 @@ public interface Spam {
    * @return true if the number is spam *and* the call is not an outgoing call.
    */
   static boolean shouldShowAsSpam(boolean isNumberSpam, int callType) {
-    return isNumberSpam && (callType != Calls.OUTGOING_TYPE);
+    return isNumberSpam && (callType != Calls.OUTGOING_TYPE
+            && callType != CallTypeHelper.OUTGOING_IMS_TYPE);
   }
 }

@@ -27,6 +27,7 @@ import android.telecom.PhoneAccountHandle;
 import android.text.TextUtils;
 import com.android.contacts.common.ContactsUtils.UserType;
 import com.android.contacts.common.util.ContactDisplayUtils;
+import com.android.dialer.calllogutils.CallTypeHelper;
 import com.android.dialer.contacts.displaypreference.ContactDisplayPreferences.DisplayOrder;
 import com.android.dialer.logging.ContactSource;
 import com.android.dialer.phonenumbercache.ContactInfo;
@@ -203,7 +204,9 @@ public class PhoneCallDetails {
   public boolean hasIncomingCalls() {
     for (int i = 0; i < callTypes.length; i++) {
       if (callTypes[i] == CallLog.Calls.INCOMING_TYPE
+          || callTypes[i] == CallTypeHelper.INCOMING_IMS_TYPE
           || callTypes[i] == CallLog.Calls.MISSED_TYPE
+          || callTypes[i] == CallTypeHelper.MISSED_IMS_TYPE
           || callTypes[i] == CallLog.Calls.VOICEMAIL_TYPE
           || callTypes[i] == CallLog.Calls.REJECTED_TYPE
           || callTypes[i] == CallLog.Calls.BLOCKED_TYPE) {

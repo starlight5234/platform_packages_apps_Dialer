@@ -35,6 +35,7 @@ import android.view.ViewGroup;
 import com.android.contacts.common.list.ViewPagerTabs;
 import com.android.dialer.app.R;
 import com.android.dialer.calldetails.OldCallDetailsActivity;
+import com.android.dialer.calllogutils.CallTypeHelper;
 import com.android.dialer.common.Assert;
 import com.android.dialer.compat.telephony.TelephonyManagerCompat;
 import com.android.dialer.constants.ActivityRequestCodes;
@@ -85,7 +86,8 @@ public class CallLogActivity extends TransactionSafeActivity
     final Intent intent = getIntent();
     if (intent != null) {
       final int callType = intent.getIntExtra(CallLog.Calls.EXTRA_CALL_TYPE_FILTER, -1);
-      if (callType == CallLog.Calls.MISSED_TYPE) {
+      if (callType == CallLog.Calls.MISSED_TYPE ||
+          callType == CallTypeHelper.MISSED_IMS_TYPE) {
         startingTab = TAB_INDEX_MISSED;
       }
     }
