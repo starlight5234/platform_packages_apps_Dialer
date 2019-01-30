@@ -1259,7 +1259,7 @@ public class DialerCall implements VideoTechListener, StateChangedListener, Capa
   private void updateEmergencyCallState() {
       Uri handle = telecomCall.getDetails().getHandle();
       isEmergencyCall = QtiCallUtils.isEmergencyNumber
-              (handle == null ? "" : handle.getSchemeSpecificPart());
+              (context, handle == null ? "" : handle.getSchemeSpecificPart());
   }
 
   public LogState getLogState() {
