@@ -51,6 +51,8 @@
         android:textSize="@dimen/select_all_text_size"/>
   </LinearLayout>
 
+  <include layout="@layout/call_log_spinner" />
+
   <FrameLayout
     android:id="@+id/modal_message_container"
     android:layout_width="match_parent"

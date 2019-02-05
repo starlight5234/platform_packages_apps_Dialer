@@ -34,6 +34,7 @@ import android.support.v4.os.UserManagerCompat;
 import android.telephony.PhoneNumberUtils;
 import android.text.TextUtils;
 import com.android.dialer.app.R;
+import com.android.dialer.calllogutils.CallTypeHelper;
 import com.android.dialer.calllogutils.PhoneNumberDisplayUtil;
 import com.android.dialer.common.LogUtil;
 import com.android.dialer.common.database.Selection;
@@ -124,10 +125,12 @@ public class CallLogNotificationsQueryHelper {
     values.put(Calls.NEW, 0);
     values.put(Calls.IS_READ, 1);
     StringBuilder where = new StringBuilder();
+    List<String> selectionArgs = new ArrayList<>();
     where.append(Calls.NEW);
     where.append(" = 1 AND ");
-    where.append(Calls.TYPE);
-    where.append(" = ?");
+    where.append(String.format("(%s = ? OR %s = ?)",Calls.TYPE, Calls.TYPE));
+    selectionArgs.add(Integer.toString(Calls.MISSED_TYPE));
+    selectionArgs.add(Integer.toString(CallTypeHelper.MISSED_IMS_TYPE));
     try {
       context
           .getContentResolver()
@@ -135,7 +138,7 @@ public class CallLogNotificationsQueryHelper {
               callUri == null ? Calls.CONTENT_URI : callUri,
               values,
               where.toString(),
-              new String[] {Integer.toString(Calls.MISSED_TYPE)});
+              selectionArgs.toArray(new String[selectionArgs.size()]));
     } catch (IllegalArgumentException e) {
       LogUtil.e(
           "CallLogNotificationsQueryHelper.markMissedCallsInCallLogAsRead",
@@ -178,7 +181,9 @@ public class CallLogNotificationsQueryHelper {
    */
   @Nullable
   public List<NewCall> getNewMissedCalls() {
-    return newCallsQuery.query(Calls.MISSED_TYPE);
+    List<NewCall> newCalls = newCallsQuery.query(Calls.MISSED_TYPE);
+    newCalls.addAll(newCallsQuery.query(CallTypeHelper.MISSED_IMS_TYPE));
+    return newCalls;
   }
 
   /**

@@ -42,4 +42,6 @@ public interface DialerCallListener {
   void onInternationalCallOnWifi();
 
   void onEnrichedCallSessionUpdate();
+
+  void onSuplServiceMessage(String suplNotificationMessage);
 }

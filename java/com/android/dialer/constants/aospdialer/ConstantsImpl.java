@@ -27,31 +27,31 @@ public class ConstantsImpl extends Constants {
   @Override
   @NonNull
   public String getFilteredNumberProviderAuthority() {
-    return "com.android.dialer.blocking.filterednumberprovider";
+    return "org.codeaurora.dialer.blocking.filterednumberprovider";
   }
 
   @Override
   @NonNull
   public String getFileProviderAuthority() {
-    return "com.android.dialer.files";
+    return "org.codeaurora.dialer.files";
   }
 
   @NonNull
   @Override
   public String getAnnotatedCallLogProviderAuthority() {
-    return "com.android.dialer.annotatedcalllog";
+    return "org.codeaurora.dialer.annotatedcalllog";
   }
 
   @NonNull
   @Override
   public String getPhoneLookupHistoryProviderAuthority() {
-    return "com.android.dialer.phonelookuphistory";
+    return "org.codeaurora.dialer.phonelookuphistory";
   }
 
   @NonNull
   @Override
   public String getPreferredSimFallbackProviderAuthority() {
-    return "com.android.dialer.preferredsimfallback";
+    return "org.codeaurora.dialer.preferredsimfallback";
   }
 
   @Override

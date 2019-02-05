@@ -95,4 +95,10 @@
   <dimen name="blocked_number_delete_icon_size">32dp</dimen>
   <dimen name="blocked_number_search_text_size">14sp</dimen>
   <dimen name="blocked_number_settings_description_text_size">14sp</dimen>
+
+  <!-- Size of call provider icon width and height -->
+  <dimen name="call_provider_small_icon_size">12dp</dimen>
+
+  <!-- Dimensions for call log spinner -->
+  <dimen name="call_log_spinner_text_size">16sp</dimen>
 </resources>

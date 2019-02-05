@@ -16,18 +16,21 @@
 
 package com.android.incallui;
 
+import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.ActivityManager.AppTask;
 import android.app.ActivityManager.TaskDescription;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.KeyguardManager;
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.GradientDrawable.Orientation;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.Trace;
 import android.support.annotation.ColorInt;
 import android.support.annotation.FloatRange;
@@ -105,8 +108,12 @@ import com.google.common.util.concurrent.ListenableFuture;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 /** Version of {@link InCallActivity} that shows the new UI */
 public class InCallActivity extends TransactionSafeFragmentActivity
@@ -142,7 +149,6 @@ public class InCallActivity extends TransactionSafeFragmentActivity
   private View pseudoBlackScreenOverlay;
   private SelectPhoneAccountDialogFragment selectPhoneAccountDialogFragment;
   private String dtmfTextToPrepopulate;
-  private boolean allowOrientationChange;
   private boolean animateDialpadOnShow;
   private boolean didShowAnswerScreen;
   private boolean didShowInCallScreen;
@@ -160,6 +166,11 @@ public class InCallActivity extends TransactionSafeFragmentActivity
   @DialpadRequestType private int showDialpadRequest = DIALPAD_REQUEST_NONE;
   private SpeakEasyCallManager speakEasyCallManager;
   private DialogFragment rttRequestDialogFragment;
+
+  final Handler mSuplSvcToastShowHandler = new Handler();
+  Set<String> mSuplSvcMessages = Collections.synchronizedSet(new HashSet<String>());
+  Toast mSuplSvcToast = null;
+  private static final int TOAST_SHOW_LONG_DURATION_MILLIS = 4000;
 
   public static Intent getIntent(
       Context context, boolean showDialpad, boolean newOutgoingCall, boolean isForFullScreen) {
@@ -264,6 +275,18 @@ public class InCallActivity extends TransactionSafeFragmentActivity
     MetricsComponent.get(this)
         .metrics()
         .stopTimer(Metrics.ON_CALL_ADDED_TO_ON_INCALL_UI_SHOWN_OUTGOING);
+  }
+
+  public void onActivityResult(int requestCode, int resultCode, Intent data) {
+    Log.i("InCallActivity.onActivityResult", " requestCode = " + requestCode +
+            " resultCode = " + resultCode + " data = " + data);
+    if (requestCode == ScreenShareHelper.REQUEST_MEDIA_PROJECTION &&
+        resultCode == Activity.RESULT_OK) {
+      LogUtil.i("InCallActivity.onActivityResult", "starting screen sharing");
+      ScreenShareHelper.onPermissionChanged((Intent) data.clone());
+      InCallPresenter.getInstance().notifyOutgoingVideoSourceChanged(
+          ScreenShareHelper.SCREEN);
+    }
   }
 
   private void setWindowFlags() {
@@ -439,9 +462,9 @@ public class InCallActivity extends TransactionSafeFragmentActivity
     super.onStart();
 
     isVisible = true;
+    InCallPresenter.getInstance().setActivity(this);
     showMainInCallFragment();
 
-    InCallPresenter.getInstance().setActivity(this);
     enableInCallOrientationEventListener(
         getRequestedOrientation()
             == InCallOrientationEventListener.ACTIVITY_PREFERENCE_ALLOW_ROTATION);
@@ -517,7 +540,7 @@ public class InCallActivity extends TransactionSafeFragmentActivity
     if (dialpadFragment != null) {
       dialpadFragment.onDialerKeyUp(null);
     }
-
+    BottomSheetHelper.getInstance().dismissBottomSheet();
     InCallPresenter.getInstance().getPseudoScreenState().removeListener(this);
     Trace.endSection();
   }
@@ -550,6 +573,7 @@ public class InCallActivity extends TransactionSafeFragmentActivity
     if (errorDialog != null) {
       errorDialog.dismiss();
     }
+    InCallCsRedialHandler.getInstance().dismissPendingDialogs();
 
     if (isFinishing()) {
       InCallPresenter.getInstance().unsetActivity(this);
@@ -565,6 +589,7 @@ public class InCallActivity extends TransactionSafeFragmentActivity
 
     InCallPresenter.getInstance().unsetActivity(this);
     InCallPresenter.getInstance().updateIsChangingConfigurations();
+    mSuplSvcToastShowHandler.removeCallbacks(mSuplSvcToastShowRunnable);
     Trace.endSection();
   }
 
@@ -833,7 +858,12 @@ public class InCallActivity extends TransactionSafeFragmentActivity
     dialpadFragmentManager.executePendingTransactions();
 
     Logger.get(this).logScreenView(ScreenEvent.Type.INCALL_DIALPAD, this);
-    getInCallOrRttCallScreen().onInCallScreenDialpadVisibilityChange(true);
+    InCallScreen inCallScreen = getInCallOrRttCallScreen();
+    if (inCallScreen == null) {
+      return;
+    }
+    inCallScreen.onInCallScreenDialpadVisibilityChange(true);
+    notifyDialpadVisibilityState(true);
   }
 
   private void hideDialpadFragment() {
@@ -849,7 +879,20 @@ public class InCallActivity extends TransactionSafeFragmentActivity
       transaction.commitAllowingStateLoss();
       dialpadFragmentManager.executePendingTransactions();
       dialpadFragment.setUserVisibleHint(false);
-      getInCallOrRttCallScreen().onInCallScreenDialpadVisibilityChange(false);
+      InCallScreen inCallScreen = getInCallOrRttCallScreen();
+      if (inCallScreen == null) {
+        return;
+      }
+      inCallScreen.onInCallScreenDialpadVisibilityChange(false);
+      notifyDialpadVisibilityState(false);
+    }
+  }
+
+  public void notifyDialpadVisibilityState(boolean isShowing) {
+    if (getInCallOrRttCallScreen() != null) {
+      getInCallOrRttCallScreen().onInCallShowDialpad(isShowing);
+    } else {
+      LogUtil.w("InCallActvity.showDialpadFragment","in call screen is null");
     }
   }
 
@@ -1033,6 +1076,8 @@ public class InCallActivity extends TransactionSafeFragmentActivity
       selectPhoneAccountDialogFragment = null;
     }
 
+    InCallCsRedialHandler.getInstance().dismissPendingDialogs();
+
     // Dismiss the dialog for international call on WiFi
     InternationalCallOnWifiDialogFragment internationalCallOnWifiFragment =
         (InternationalCallOnWifiDialogFragment)
@@ -1040,6 +1085,9 @@ public class InCallActivity extends TransactionSafeFragmentActivity
     if (internationalCallOnWifiFragment != null) {
       internationalCallOnWifiFragment.dismiss();
     }
+
+    // Dismiss the BottomSheet which was inflated by clicking more button
+    BottomSheetHelper.getInstance().dismissBottomSheet();
 
     // Dismiss the answer screen
     AnswerScreen answerScreen = getAnswerScreen();
@@ -1050,7 +1098,7 @@ public class InCallActivity extends TransactionSafeFragmentActivity
     needDismissPendingDialogs = false;
   }
 
-  private void enableInCallOrientationEventListener(boolean enable) {
+  public void enableInCallOrientationEventListener(boolean enable) {
     if (enable) {
       inCallOrientationEventListener.enable(true /* notifyDeviceOrientationChange */);
     } else {
@@ -1083,7 +1131,9 @@ public class InCallActivity extends TransactionSafeFragmentActivity
   }
 
   public int getDialpadContainerId() {
-    return getInCallOrRttCallScreen().getAnswerAndDialpadContainerResourceId();
+    InCallScreen inCallScreen = getInCallOrRttCallScreen();
+    return (inCallScreen == null) ? 0 :
+        inCallScreen.getAnswerAndDialpadContainerResourceId();
   }
 
   @Override
@@ -1181,17 +1231,38 @@ public class InCallActivity extends TransactionSafeFragmentActivity
     rttRequestDialogFragment.show(getSupportFragmentManager(), Tags.RTT_REQUEST_DIALOG);
   }
 
-  public void setAllowOrientationChange(boolean allowOrientationChange) {
-    if (this.allowOrientationChange == allowOrientationChange) {
-      return;
-    }
-    this.allowOrientationChange = allowOrientationChange;
-    if (!allowOrientationChange) {
-      setRequestedOrientation(InCallOrientationEventListener.ACTIVITY_PREFERENCE_DISALLOW_ROTATION);
-    } else {
-      setRequestedOrientation(InCallOrientationEventListener.ACTIVITY_PREFERENCE_ALLOW_ROTATION);
-    }
-    enableInCallOrientationEventListener(allowOrientationChange);
+  public void showSuplServiceMessageToast(String suplNotificationMessage) {
+      showSuplSvcToast(suplNotificationMessage);
+  }
+
+  final Runnable mSuplSvcToastShowRunnable = new Runnable() {
+      @Override
+      public void run() {
+          mSuplSvcToast.cancel();
+          mSuplSvcToast = null;
+          if (mSuplSvcMessages.size() > 0) {
+              Iterator<String> itr = mSuplSvcMessages.iterator();
+              String msg = itr.next();
+              mSuplSvcMessages.remove(msg);
+              showSuplSvcToast(msg);
+          }
+      }
+  };
+
+  private void showSuplSvcToast(String suplNotificationMessage) {
+      if (mSuplSvcToast == null) {
+          LogUtil.i("InCallActivity.showSuplSvcToast",
+                  "Showing toast: %s", suplNotificationMessage);
+          mSuplSvcToast = Toast.makeText(this, suplNotificationMessage, Toast.LENGTH_LONG);
+          mSuplSvcToast.getWindowParams().flags |= WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED;
+          mSuplSvcToast.show();
+          mSuplSvcToastShowHandler.postDelayed(mSuplSvcToastShowRunnable,
+                  TOAST_SHOW_LONG_DURATION_MILLIS);
+      } else {
+          // Already one supplementary message toast showing, now add this message to set and
+          // wait for previous toast show to finish.
+          mSuplSvcMessages.add(suplNotificationMessage);
+      }
   }
 
   public void hideMainInCallFragment() {
@@ -1240,8 +1311,6 @@ public class InCallActivity extends TransactionSafeFragmentActivity
         didShowRttCallScreen,
         didShowVideoCallScreen,
         didShowSpeakEasyScreen);
-    // Only video call ui allows orientation change.
-    setAllowOrientationChange(shouldShowVideoUi.shouldShow);
 
     FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
     boolean didChange;
@@ -1278,11 +1347,13 @@ public class InCallActivity extends TransactionSafeFragmentActivity
     }
 
     if (didChange) {
+      BottomSheetHelper.getInstance().dismissBottomSheet();
       Trace.beginSection("InCallActivity.commitTransaction");
       transaction.commitNow();
       Trace.endSection();
       Logger.get(this).logScreenView(ScreenEvent.Type.INCALL, this);
     }
+    notifyDialpadVisibilityState(isDialpadVisible());
     isInShowMainInCallFragment = false;
     Trace.endSection();
   }
@@ -1658,6 +1729,9 @@ public class InCallActivity extends TransactionSafeFragmentActivity
     }
     if (didShowRttCallScreen) {
       inCallScreen = getRttCallScreen();
+    }
+    if (didShowVideoCallScreen) {
+      inCallScreen = (InCallScreen) getVideoCallScreen();
     }
     return inCallScreen;
   }

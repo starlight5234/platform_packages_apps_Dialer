@@ -40,6 +40,10 @@ import com.android.dialer.glidephotomanager.PhotoInfo;
 import com.android.dialer.oem.MotorolaUtils;
 import com.android.dialer.util.DialerUtils;
 import com.android.dialer.util.IntentUtil;
+import org.codeaurora.ims.utils.QtiImsExtUtils;
+import android.telephony.SubscriptionInfo;
+import android.telephony.SubscriptionManager;
+
 
 /** ViewHolder for call entries in {@link OldCallDetailsActivity} or {@link CallDetailsActivity}. */
 public class CallDetailsEntryViewHolder extends ViewHolder {
@@ -103,6 +107,20 @@ public class CallDetailsEntryViewHolder extends ViewHolder {
       CallTypeHelper callTypeHelper,
       boolean showMultimediaDivider) {
     int callType = entry.getCallType();
+    if ((entry.getFeatures() & Calls.FEATURES_HD_CALL) == Calls.FEATURES_HD_CALL) {
+      switch (callType) {
+        case Calls.INCOMING_TYPE :
+          callType = CallTypeHelper.INCOMING_IMS_TYPE;
+          break;
+        case Calls.OUTGOING_TYPE :
+          callType = CallTypeHelper.OUTGOING_IMS_TYPE;
+          break;
+        case Calls.MISSED_TYPE :
+          callType = CallTypeHelper.MISSED_IMS_TYPE;
+          break;
+        default:
+      }
+    }
     boolean isVideoCall = (entry.getFeatures() & Calls.FEATURES_VIDEO) == Calls.FEATURES_VIDEO;
     boolean isPulledCall =
         (entry.getFeatures() & Calls.FEATURES_PULLED_EXTERNALLY)
@@ -111,6 +129,20 @@ public class CallDetailsEntryViewHolder extends ViewHolder {
     boolean isRttCall =
         BuildCompat.isAtLeastP()
             && (entry.getFeatures() & Calls.FEATURES_RTT) == Calls.FEATURES_RTT;
+
+    boolean  is4GConferenceEnabledSub = false;
+    SubscriptionInfo si = SubscriptionManager.from(context).
+            getActiveSubscriptionInfoForIccIndex(entry.getAccountId());
+    if (si != null) {
+        int slotId = si.getSimSlotIndex();
+        int subId = si.getSubscriptionId();
+        if (SubscriptionManager.isValidSubscriptionId(subId)) {
+          is4GConferenceEnabledSub = QtiImsExtUtils.isCarrierConfigEnabled(
+              slotId, context, "config_enable_conference_dialer");
+          LogUtil.i("CallDetailsEntryViewHolder.setCallDetails",
+              "is4GConferenceEnabledSub: " + is4GConferenceEnabledSub);
+        }
+    }
 
     callTime.setTextColor(getColorForCallType(context, callType));
     callTypeIcon.clear();
@@ -128,7 +160,7 @@ public class CallDetailsEntryViewHolder extends ViewHolder {
         callTypeHelper.getCallTypeText(callType, isVideoCall, isPulledCall, isDuoCall));
     callTime.setText(CallLogDates.formatDate(context, entry.getDate()));
 
-    if (CallTypeHelper.isMissedCallType(callType)) {
+    if (CallTypeHelper.isMissedCallType(callType) || is4GConferenceEnabledSub) {
       callDuration.setVisibility(View.GONE);
     } else {
       callDuration.setVisibility(View.VISIBLE);
@@ -217,13 +249,16 @@ public class CallDetailsEntryViewHolder extends ViewHolder {
   private static @ColorInt int getColorForCallType(Context context, int callType) {
     switch (callType) {
       case Calls.OUTGOING_TYPE:
+      case CallTypeHelper.OUTGOING_IMS_TYPE:
       case Calls.VOICEMAIL_TYPE:
       case Calls.BLOCKED_TYPE:
       case Calls.INCOMING_TYPE:
+      case CallTypeHelper.INCOMING_IMS_TYPE:
       case Calls.ANSWERED_EXTERNALLY_TYPE:
       case Calls.REJECTED_TYPE:
         return ContextCompat.getColor(context, R.color.dialer_secondary_text_color);
       case Calls.MISSED_TYPE:
+      case CallTypeHelper.MISSED_IMS_TYPE:
       default:
         // It is possible for users to end up with calls with unknown call types in their
         // call history, possibly due to 3rd party call log implementations (e.g. to

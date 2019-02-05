@@ -23,6 +23,7 @@ import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
 import com.android.dialer.app.R;
 import com.android.dialer.app.calllog.calllogcache.CallLogCache;
+import com.android.dialer.calllogutils.CallTypeHelper;
 import com.android.dialer.calllogutils.PhoneCallDetails;
 import com.android.dialer.common.Assert;
 import com.android.dialer.common.LogUtil;
@@ -223,11 +224,13 @@ import com.android.dialer.common.LogUtil;
     int lastCallType = getLastCallType(callTypes);
     int stringID;
 
-    if (lastCallType == Calls.MISSED_TYPE) {
+    if (lastCallType == Calls.MISSED_TYPE ||
+        lastCallType == CallTypeHelper.MISSED_IMS_TYPE) {
       //Message: Missed call from <NameOrNumber>, <TypeOrLocation>, <TimeOfCall>,
       //<PhoneAccount>.
       stringID = R.string.description_incoming_missed_call;
-    } else if (lastCallType == Calls.INCOMING_TYPE) {
+    } else if (lastCallType == Calls.INCOMING_TYPE ||
+        lastCallType == CallTypeHelper.INCOMING_IMS_TYPE) {
       //Message: Answered call from <NameOrNumber>, <TypeOrLocation>, <TimeOfCall>,
       //<PhoneAccount>.
       stringID = R.string.description_incoming_answered_call;

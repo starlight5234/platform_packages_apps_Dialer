@@ -19,6 +19,7 @@ package com.android.incallui.videotech.empty;
 import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.telecom.InCallService.VideoCall;
 import android.telecom.PhoneAccountHandle;
 import com.android.dialer.common.Assert;
 import com.android.incallui.video.protocol.VideoCallScreen;
@@ -79,7 +80,24 @@ public class EmptyVideoTech implements VideoTech {
   public void acceptVideoRequest(@NonNull Context context) {}
 
   @Override
+  public void upgradeToVideo(int videoState) {}
+
+  @Override
+  public int getUpgradeToVideoState() {
+    return -1;
+  }
+
+  @Override
+  public int getRequestedVideoState() {
+    return -1;
+  }
+
+
+  @Override
   public void acceptVideoRequestAsAudio() {}
+
+  @Override
+  public void acceptVideoRequest(int videoState) {}
 
   @Override
   public void declineVideoRequest() {}
@@ -114,4 +132,7 @@ public class EmptyVideoTech implements VideoTech {
   public com.android.dialer.logging.VideoTech.Type getVideoTechType() {
     return com.android.dialer.logging.VideoTech.Type.NONE;
   }
+
+  @Override
+  public VideoCall getVideoCall() {return null;}
 }

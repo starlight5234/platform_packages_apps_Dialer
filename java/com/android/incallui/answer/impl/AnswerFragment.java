@@ -37,6 +37,7 @@ import android.support.annotation.Nullable;
 import android.support.annotation.StringRes;
 import android.support.annotation.VisibleForTesting;
 import android.support.v4.app.Fragment;
+import android.telecom.VideoProfile;
 import android.text.TextUtils;
 import android.transition.TransitionManager;
 import android.view.LayoutInflater;
@@ -48,6 +49,7 @@ import android.view.ViewTreeObserver.OnGlobalLayoutListener;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.accessibility.AccessibilityNodeInfo.AccessibilityAction;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import com.android.dialer.common.Assert;
@@ -59,6 +61,10 @@ import com.android.dialer.logging.Logger;
 import com.android.dialer.multimedia.MultimediaData;
 import com.android.dialer.telecom.TelecomUtil;
 import com.android.dialer.util.ViewUtil;
+import com.android.incallui.BottomSheetHelper;
+import com.android.incallui.ExtBottomSheetFragment.ExtBottomSheetActionCallback;
+import com.android.incallui.VideoCallPresenter;
+import com.android.incallui.QtiCallUtils;
 import com.android.incallui.answer.impl.CreateCustomSmsDialogFragment.CreateCustomSmsHolder;
 import com.android.incallui.answer.impl.SmsBottomSheetFragment.SmsSheetHolder;
 import com.android.incallui.answer.impl.affordance.SwipeButtonHelper.Callback;
@@ -70,6 +76,7 @@ import com.android.incallui.answer.impl.utils.Interpolators;
 import com.android.incallui.answer.protocol.AnswerScreen;
 import com.android.incallui.answer.protocol.AnswerScreenDelegate;
 import com.android.incallui.answer.protocol.AnswerScreenDelegateFactory;
+import com.android.incallui.call.DialerCall;
 import com.android.incallui.call.state.DialerCallState;
 import com.android.incallui.contactgrid.ContactGridManager;
 import com.android.incallui.incall.protocol.ContactPhotoType;
@@ -101,6 +108,8 @@ public class AnswerFragment extends Fragment
         SmsSheetHolder,
         CreateCustomSmsHolder,
         AnswerMethodHolder,
+        OnClickListener,
+        ExtBottomSheetActionCallback,
         MultimediaFragment.Holder {
 
   @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
@@ -146,6 +155,7 @@ public class AnswerFragment extends Fragment
   private View importanceBadge;
   private SwipeButtonView secondaryButton;
   private SwipeButtonView answerAndReleaseButton;
+  private ImageButton moreOptionsMenuButton;
   private AffordanceHolderLayout affordanceHolderLayout;
   private LinearLayout chipContainer;
   // Use these flags to prevent user from clicking accept/reject buttons multiple times.
@@ -498,6 +508,25 @@ public class AnswerFragment extends Fragment
   }
 
   @Override
+  public void onClick(View v) {
+  if (moreOptionsMenuButton == v) {
+     BottomSheetHelper.getInstance()
+          .showBottomSheet(getChildFragmentManager());
+     }
+  }
+
+  @Override
+  public void optionSelected(@Nullable String text) {
+    //callback for bottomsheet clicks
+    BottomSheetHelper.getInstance().optionSelected(text);
+  }
+
+  @Override
+  public void sheetDismissed() {
+    BottomSheetHelper.getInstance().sheetDismissed();
+  }
+
+  @Override
   public boolean hasPendingDialogs() {
     boolean hasPendingDialogs =
         textResponsesFragment != null || createCustomSmsDialogFragment != null;
@@ -544,6 +573,11 @@ public class AnswerFragment extends Fragment
   @Override
   public Fragment getAnswerScreenFragment() {
     return this;
+  }
+
+  @Override
+  public void updateAnswerScreenUi() {
+    updateUI();
   }
 
   private AnswerMethod getAnswerMethod() {
@@ -688,6 +722,9 @@ public class AnswerFragment extends Fragment
   public void onInCallScreenDialpadVisibilityChange(boolean isShowing) {}
 
   @Override
+  public void onInCallShowDialpad(boolean isShown) {}
+
+  @Override
   public int getAnswerAndDialpadContainerResourceId() {
     throw Assert.createUnsupportedOperationFailException();
   }
@@ -718,6 +755,8 @@ public class AnswerFragment extends Fragment
     View view = inflater.inflate(R.layout.fragment_incoming_call, container, false);
     secondaryButton = (SwipeButtonView) view.findViewById(R.id.incoming_secondary_button);
     answerAndReleaseButton = (SwipeButtonView) view.findViewById(R.id.incoming_secondary_button2);
+    moreOptionsMenuButton = (ImageButton) view.findViewById(R.id.qti_dialer_incoming_botton_more);
+    moreOptionsMenuButton.setOnClickListener(this);
 
     affordanceHolderLayout = (AffordanceHolderLayout) view.findViewById(R.id.incoming_container);
     affordanceHolderLayout.setAffordanceCallback(affordanceCallback);
@@ -773,7 +812,15 @@ public class AnswerFragment extends Fragment
     }
     view.setSystemUiVisibility(flags);
     if (isVideoCall() || isVideoUpgradeRequest()) {
-      if (VideoUtils.hasCameraPermissionAndShownPrivacyToast(getContext())) {
+      final DialerCall call = QtiCallUtils.getIncomingOrActiveCall();
+      int requestedVideoState = VideoProfile.STATE_AUDIO_ONLY;
+      if (call != null) {
+        requestedVideoState = call.getVideoTech().getRequestedVideoState();
+      }
+
+      if (VideoUtils.hasCameraPermissionAndShownPrivacyToast(getContext()) &&
+          (VideoCallPresenter.isTransmissionEnabled(call) ||
+          VideoProfile.isTransmissionEnabled(requestedVideoState))) {
         if (isSelfManagedCamera()) {
           answerVideoCallScreen = new SelfManagedAnswerVideoCallScreen(getCallId(), this, view);
         } else {
@@ -882,6 +929,12 @@ public class AnswerFragment extends Fragment
     }
 
     restoreBackgroundMaskColor();
+    BottomSheetHelper bottomSheetHelper = BottomSheetHelper.getInstance();
+    boolean isVisible = bottomSheetHelper.shallShowMoreButton(getActivity());
+    if (isVisible) {
+      bottomSheetHelper.updateMap();
+    }
+    bottomSheetHelper.updateMoreButtonVisibility(isVisible, moreOptionsMenuButton);
   }
 
   @Override

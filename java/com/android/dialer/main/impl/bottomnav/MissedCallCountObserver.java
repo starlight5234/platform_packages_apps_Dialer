@@ -22,6 +22,7 @@ import android.database.ContentObserver;
 import android.database.Cursor;
 import android.provider.CallLog.Calls;
 import android.support.annotation.RequiresPermission;
+import com.android.dialer.calllogutils.CallTypeHelper;
 import com.android.dialer.common.concurrent.DialerExecutorComponent;
 import com.android.dialer.common.concurrent.UiListener;
 import com.android.dialer.main.impl.bottomnav.BottomNavBar.TabIndex;
@@ -63,10 +64,13 @@ public final class MissedCallCountObserver extends ContentObserver {
                                   + Calls.IS_READ
                                   + " = ? OR "
                                   + Calls.IS_READ
-                                  + " IS NULL) AND "
+                                  + " IS NULL) AND ("
                                   + Calls.TYPE
-                                  + " = ?",
-                              new String[] {"0", Integer.toString(Calls.MISSED_TYPE)},
+                                  + " = ? OR "
+                                  +Calls.TYPE
+                                  +" = ?)",
+                              new String[] {"0", Integer.toString(Calls.MISSED_TYPE),
+                                  Integer.toString(CallTypeHelper.MISSED_IMS_TYPE)},
                               /* sortOrder= */ null)) {
                     return cursor == null ? 0 : cursor.getCount();
                   }

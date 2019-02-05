@@ -386,6 +386,9 @@ public class CallCardPresenter
   public void onInternationalCallOnWifi() {}
 
   @Override
+  public void onSuplServiceMessage(String suplNotificationMessage) {}
+
+  @Override
   public void onEnrichedCallSessionUpdate() {
     LogUtil.enterBlock("CallCardPresenter.onEnrichedCallSessionUpdate");
     updatePrimaryDisplayInfo();
@@ -441,6 +444,37 @@ public class CallCardPresenter
         || inCallScreen.isManageConferenceVisible() != shouldShowManageConference();
   }
 
+  private String getPrimaryInfoLocation(ContactCacheEntry contactInfo) {
+    if (contactInfo != null && contactInfo.location != null) {
+      return contactInfo.location;
+    }
+    return "";
+  }
+
+  /**
+   * Returns the label with location for Active Call except conference call and
+   * calling from the saved contact.
+   */
+  private String getLabelWithLocation() {
+    String label = getConnectionLabel();
+    if (primaryContactInfo != null) {
+      String name = getNameForCall(primaryContactInfo);
+      String primaryLocation = getPrimaryInfoLocation(primaryContactInfo);
+      boolean nameIsNumber = name != null && !name.equals(primaryContactInfo.number);
+      boolean isConferenceCall = primary != null && primary.isConferenceCall();
+      boolean isEmergencyCall =  primary != null && primary.isEmergencyCall();
+      if (!(nameIsNumber || isConferenceCall) && isPrimaryCallActive()) {
+        label += "  ";
+        if (isEmergencyCall) {
+          label += primary.getNumber();
+        } else {
+          label += primaryLocation;
+        }
+      }
+    }
+    return label;
+  }
+
   private void updatePrimaryCallState() {
     if (getUi() != null && primary != null) {
       boolean isWorkCall =
@@ -455,6 +489,11 @@ public class CallCardPresenter
               && MotorolaUtils.shouldBlinkHdIconWhenConnectingCall(context);
 
       boolean isBusiness = primaryContactInfo != null && primaryContactInfo.isBusiness;
+      boolean isConfCall = (primary.isConferenceCall() || primary.isIncomingConfCall())
+          && !primary.hasProperty(Details.PROPERTY_GENERIC_CONFERENCE);
+
+      String label = getLabelWithLocation();
+      String primaryLocation = getPrimaryInfoLocation(primaryContactInfo);
 
       // Check for video state change and update the visibility of the contact photo.  The contact
       // photo is hidden when the incoming video surface is shown.
@@ -465,10 +504,13 @@ public class CallCardPresenter
           .setCallState(
               PrimaryCallState.builder()
                   .setState(primary.getState())
-                  .setIsVideoCall(primary.isVideoCall())
+                  .setIsVideoCall(!QtiCallUtils.hasVideoCrbtVoLteCall(context, primary)
+                      && primary.isVideoCall())
                   .setSessionModificationState(primary.getVideoTech().getSessionModificationState())
                   .setDisconnectCause(primary.getDisconnectCause())
-                  .setConnectionLabel(getConnectionLabel())
+                  .setConnectionLabel(getConnectionLabel() + "  " + (isPrimaryCallActive() ?
+                      (isOutgoingEmergencyCall(primary) ?
+                      primary.getNumber() : primaryLocation) : ""))
                   .setPrimaryColor(
                       InCallPresenter.getInstance().getThemeColorManager().getPrimaryColor())
                   .setSimSuggestionReason(getSimSuggestionReason())
@@ -479,9 +521,7 @@ public class CallCardPresenter
                       PhoneNumberHelper.formatNumber(
                           context, primary.getCallbackNumber(), primary.getSimCountryIso()))
                   .setIsWifi(primary.hasProperty(Details.PROPERTY_WIFI))
-                  .setIsConference(
-                      primary.isConferenceCall()
-                          && !primary.hasProperty(Details.PROPERTY_GENERIC_CONFERENCE))
+                  .setIsConference(isConfCall)
                   .setIsWorkCall(isWorkCall)
                   .setIsHdAttempting(isAttemptingHdAudioCall)
                   .setIsHdAudioCall(isHdAudioCall)
@@ -961,7 +1001,7 @@ public class CallCardPresenter
       }
     }
 
-    return null;
+    return primary.getCallProviderIcon();
   }
 
   private boolean hasOutgoingGatewayCall() {
@@ -1035,8 +1075,23 @@ public class CallCardPresenter
     maybeShowManageConferenceCallButton();
   }
 
+  @Override
+  public void onSendStaticImageStateChanged(boolean isEnabled) {
+    //No-op
+  }
+
+  @Override
+  public void onOutgoingVideoSourceChanged(int videoSource) {
+    //No-op
+  }
+
   private boolean isPrimaryCallActive() {
     return primary != null && primary.getState() == DialerCallState.ACTIVE;
+  }
+
+  @Override
+  public void onSessionModificationStateChange(DialerCall call) {
+   //No-op
   }
 
   private boolean shouldShowEndCallButton(DialerCall primary, int callState) {

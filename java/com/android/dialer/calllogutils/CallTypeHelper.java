@@ -43,6 +43,16 @@ public class CallTypeHelper {
   private final CharSequence outgoingVideoPulledName;
   /** Name used to identify missed video calls. */
   private final CharSequence missedVideoName;
+  /** Name used to identify incoming volte calls. */
+  private final CharSequence incomingVoLTEName;
+  /** Name used to identify incoming volte calls which were transferred to another device. */
+  private final CharSequence incomingVoLTEPulledName;
+  /** Name used to identify outgoing volte calls. */
+  private final CharSequence outgoingVoLTEName;
+  /** Name used to identify outgoing volte calls which were transferred to another device. */
+  private final CharSequence outgoingVoLTEPulledName;
+  /** Name used to identify missed volte calls. */
+  private final CharSequence missedVoLTEName;
   /** Name used to identify voicemail calls. */
   private final CharSequence voicemailName;
   /** Name used to identify rejected calls. */
@@ -56,6 +66,10 @@ public class CallTypeHelper {
   /** Name used to identify outgoing Duo calls. */
   private final CharSequence outgoingDuoCall;
 
+  public static final int INCOMING_IMS_TYPE = 1000;
+  public static final int OUTGOING_IMS_TYPE = 1001;
+  public static final int MISSED_IMS_TYPE = 1002;
+
   public CallTypeHelper(Resources resources, Duo duo) {
     // Cache these values so that we do not need to look them up each time.
     incomingName = resources.getString(R.string.type_incoming);
@@ -68,6 +82,11 @@ public class CallTypeHelper {
     outgoingVideoName = resources.getString(R.string.type_outgoing_video);
     outgoingVideoPulledName = resources.getString(R.string.type_outgoing_video_pulled);
     missedVideoName = resources.getString(R.string.type_missed_video);
+    incomingVoLTEName = resources.getString(R.string.type_incoming_volte);
+    incomingVoLTEPulledName = resources.getString(R.string.type_incoming_volte_pulled);
+    outgoingVoLTEName = resources.getString(R.string.type_outgoing_volte);
+    outgoingVoLTEPulledName = resources.getString(R.string.type_outgoing_volte_pulled);
+    missedVoLTEName = resources.getString(R.string.type_missed_volte);
     voicemailName = resources.getString(R.string.type_voicemail);
     rejectedName = resources.getString(R.string.type_rejected);
     blockedName = resources.getString(R.string.type_blocked);
@@ -89,6 +108,8 @@ public class CallTypeHelper {
   public static boolean isMissedCallType(int callType) {
     return (callType != Calls.INCOMING_TYPE
         && callType != Calls.OUTGOING_TYPE
+        && callType != INCOMING_IMS_TYPE
+        && callType != OUTGOING_IMS_TYPE
         && callType != Calls.VOICEMAIL_TYPE
         && callType != Calls.ANSWERED_EXTERNALLY_TYPE);
   }
@@ -115,6 +136,21 @@ public class CallTypeHelper {
           }
         }
 
+      case INCOMING_IMS_TYPE:
+        if (isVideoCall) {
+          if (isPulledCall) {
+            return incomingVideoPulledName;
+          } else {
+            return incomingVideoName;
+          }
+        } else {
+          if (isPulledCall) {
+            return incomingVoLTEPulledName;
+          } else {
+            return incomingVoLTEName;
+          }
+        }
+
       case Calls.OUTGOING_TYPE:
         if (isVideoCall) {
           if (isPulledCall) {
@@ -133,11 +169,33 @@ public class CallTypeHelper {
           }
         }
 
+      case OUTGOING_IMS_TYPE:
+        if (isVideoCall) {
+          if (isPulledCall) {
+            return outgoingVideoPulledName;
+          } else {
+            return outgoingVideoName;
+          }
+        } else {
+          if (isPulledCall) {
+            return outgoingVoLTEPulledName;
+          } else {
+            return outgoingVoLTEName;
+          }
+        }
+
       case Calls.MISSED_TYPE:
         if (isVideoCall) {
           return missedVideoName;
         } else {
           return missedName;
+        }
+
+      case MISSED_IMS_TYPE:
+        if (isVideoCall) {
+          return missedVideoName;
+        } else {
+          return missedVoLTEName;
         }
 
       case Calls.VOICEMAIL_TYPE:

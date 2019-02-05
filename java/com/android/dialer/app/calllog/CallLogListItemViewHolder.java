@@ -1068,7 +1068,9 @@ public final class CallLogListItemViewHolder extends RecyclerView.ViewHolder
               == VideoProfile.STATE_BIDIRECTIONAL) {
         Logger.get(context).logImpression(DialerImpression.Type.IMS_VIDEO_REQUESTED_FROM_CALL_LOG);
       }
-
+      if (DialerUtils.isConferenceURICallLog(number, postDialDigits)) {
+        intent.putExtra("org.codeaurora.extra.DIAL_CONFERENCE_URI", true);
+      }
       DialerUtils.startActivityWithErrorToast(context, intent);
     }
   }

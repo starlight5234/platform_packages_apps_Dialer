@@ -70,4 +70,7 @@ public class ActiveCallsCallListListener implements CallList.Listener {
 
   @Override
   public void onInternationalCallOnWifi(@NonNull DialerCall call) {}
+
+  @Override
+  public void onSuplServiceMessage(String suplNotificationMessage) {}
 }

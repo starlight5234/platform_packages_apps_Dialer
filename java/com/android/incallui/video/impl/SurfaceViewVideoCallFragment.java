@@ -716,6 +716,10 @@ public class SurfaceViewVideoCallFragment extends Fragment
   }
 
   @Override
+  public void onRequestReadStoragePermission() {
+  }
+
+  @Override
   @NonNull
   public String getCallId() {
     return Assert.isNotNull(getArguments().getString(ARG_CALL_ID));
@@ -899,6 +903,11 @@ public class SurfaceViewVideoCallFragment extends Fragment
   @Override
   public void onInCallScreenDialpadVisibilityChange(boolean isShowing) {
     LogUtil.i("SurfaceViewVideoCallFragment.onInCallScreenDialpadVisibilityChange", null);
+  }
+
+  @Override
+  public void onInCallShowDialpad(boolean isShown) {
+    LogUtil.i("SurfaceViewVideoCallFragment.onInCallShowDialpad", null);
   }
 
   @Override

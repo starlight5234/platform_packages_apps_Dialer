@@ -519,6 +519,9 @@ public class RttChatFragment extends Fragment
   }
 
   @Override
+  public void onInCallShowDialpad(boolean isShown) {}
+
+  @Override
   public int getAnswerAndDialpadContainerResourceId() {
     return R.id.incall_dialpad_container;
   }

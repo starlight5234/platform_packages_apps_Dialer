@@ -100,6 +100,15 @@
         android:layout_centerHorizontal="true"
         android:visibility="gone"/>
 
+    <!-- volume boost -->
+    <ImageButton
+        android:id="@+id/volume_boost"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_alignParentTop="true"
+        android:soundEffectsEnabled="false"
+        android:background="@drawable/vb_normal"/>
+
     <FrameLayout
         android:id="@+id/incall_dialpad_container"
         style="@style/DialpadContainer"
@@ -118,6 +127,18 @@
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
         android:contentDescription="@string/incall_content_description_end_call"/>
+    <ImageButton
+      android:id="@+id/incall_more_button"
+      style="@style/Incall.Button.VideoCall"
+      android:layout_height="wrap_content"
+      android:layout_width="wrap_content"
+      android:layout_marginTop="16dp"
+      android:layout_marginBottom="36dp"
+      android:layout_alignParentBottom="true"
+      android:src="@drawable/quantum_ic_more_vert_white_24"
+      android:layout_marginLeft = "16dp"
+      android:contentDescription="More Options"/>
+
   </RelativeLayout>
 
   <FrameLayout

@@ -65,4 +65,44 @@
   <string name="rtt_request_dialog_more_information">RTT 可为以下类型的来电者提供协助：失聪者、听力障碍人士、语言障碍人士或需要语音以外服务的人。</string>
   <string name="rtt_button_decline_request">不用了</string>
   <string name="rtt_button_accept_request">加入 RTT</string>
+  <!-- In-call screen: status label for an incoming conference call [CHAR LIMIT=25] -->
+  <string name="card_title_incoming_conf_call">"电话会议来电"</string>
+  <!-- In-call screen: status label for an incoming video conference call [CHAR LIMIT=25] -->
+  <string name="card_title_incoming_video_conf_call">"视频会议来电"</string>
+  <!-- The "label" of the in-call Notification for an incoming conference ringing call. [CHAR LIMIT=60] -->
+  <string name="notification_incoming_conf_call">"电话会议来电"</string>
+  <!-- Title displayed in the overlay for incoming conference calls which include the name of the provider.
+       [CHAR LIMIT=40] -->
+  <string name="incoming_conf_via_template">"通过 <xliff:g id="provider_name">%s</xliff:g>会议来电"</string>
+  <string name="volume_boost_notify_enabled">"开启音量增强"</string>
+  <string name="volume_boost_notify_disabled">"关闭音量增强"</string>
+  <string name="volume_boost_notify_unavailable">"有线/蓝牙耳机连接时，音效增强不可用"</string>
+  <string name="call_failed_due_to_validate_number">"无法发起视频通话，号码格式不正确"</string>
+  <string name="call_state_dialing">"正在拨号"</string>
+  <string name="call_state_holding">"保持"</string>
+  <string name="call_state_active">"正在通话"</string>
+  <string name="call_state_unknown">"未知"</string>
+  <string name="call_state_disconnecting">"正在挂断"</string>
+  <string name="call_state_disconnected">"通话结束"</string>
+  <string name="select_your_option">"请选择电话会议拨号器: "</string>
+  <string name="select_your_4g_dialer_cancel_option">"取消"</string>
+  <string name="conference_uri_dialer_option">"URI电话会议拨号器"</string>
+  <string name="conference_4g_dialer_option">"4G电话会议拨号器"</string>
+  <string name="cancel_modify_call_label">取消更改通话类型</string>
+  <string name="cancel_modify_call_title">取消更改通话类型?</string>
+  <string name="cancel_upgrade">取消视频请求</string>
+  <string name="not_cancel">不取消</string>
+  <string name="add_participant_option_msg">添加参与者</string>
+  <string name="video_rx_label">视频接收</string>
+  <string name="video_tx_label">视频发送</string>
+  <string name="modify_call_label">更改通话类型</string>
+  <string name="notification_requesting_video_tx_call">"呼入视频发送请求"</string>
+  <string name="notification_requesting_video_rx_call">"呼入视频接收请求"</string>
+  <string name="modify_call_option_title">何种通话类型?</string>
+  <string name="modify_call_option_vt">双向视频</string>
+  <string name="modify_call_option_vt_tx">视频发送</string>
+  <string name="modify_call_option_vt_rx">视频接收</string>
+  <string name="modify_call_option_voice">仅语音</string>
+  <string name="too_many_recipients">4G会议电话的参与人数上限为6人。</string>
+  <string name="dialpad_label">显示拨号盘</string>
 </resources>

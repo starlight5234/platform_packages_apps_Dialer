@@ -22,6 +22,7 @@ import android.content.Context;
 import android.net.Uri;
 import android.provider.CallLog.Calls;
 import android.support.v4.os.UserManagerCompat;
+import com.android.dialer.calllogutils.CallTypeHelper;
 import com.android.dialer.common.LogUtil;
 import com.android.dialer.common.concurrent.Annotations.BackgroundExecutor;
 import com.android.dialer.common.concurrent.Annotations.Ui;
@@ -144,7 +145,11 @@ public final class ClearMissedCalls {
                           .buildUpon()
                           .or(Selection.column(Calls.IS_READ).is("IS NULL"))
                           .build())
-                  .and(Selection.column(Calls.TYPE).is("=", Calls.MISSED_TYPE));
+                  .and(Selection.column(Calls.TYPE)
+                          .is("=", Calls.MISSED_TYPE)
+                          .buildUpon()
+                          .or(Selection.column(Calls.TYPE).is("=", CallTypeHelper.MISSED_IMS_TYPE))
+                          .build());
           if (!ids.isEmpty()) {
             selectionBuilder.and(Selection.column(Calls._ID).in(toStrings(ids)));
           }

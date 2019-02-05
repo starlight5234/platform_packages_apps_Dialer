@@ -35,6 +35,8 @@
        [CHAR LIMIT=30] -->
   <string name="dialer_hint_find_contact">Search contacts</string>
 
+  <string name="menu_4g_conference_call">4G Conference Call</string>
+
   <!-- Show users their settings [CHAR LIMIT=20] -->
   <string name="settings">Settings</string>
 

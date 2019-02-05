@@ -20,7 +20,7 @@
 
   <!-- Application name used in Settings/Apps. Default label for activities
        that don't specify a label. -->
-  <string name="applicationLabel" tools:ignore="UnusedResources">Phone</string>
+  <string name="applicationLabel" tools:ignore="UnusedResources">QTI Phone</string>
 
   <!-- Title for the activity that dials the phone, when launched directly into the dialpad -->
   <string name="launcherDialpadActivityLabel">Phone Keypad</string>
@@ -718,4 +718,20 @@
   <!-- If a user deletes a call that has attachments (photo, message, ect) bundled with it, they need
         to be told that they need to go to the SMS app to delete the attachments. [CHAR LIMIT=NONE] -->
   <string name="multiple_ec_data_deleted">Calls deleted. View and delete attachments shared during calls in Messages.</string>
+
+  <string name="call_log_show_all_slots">All SIMs</string>
+
+  <string name="call_log_all_calls_header">All calls</string>
+
+  <!-- The header to show that call log is only showing voicemail calls. -->
+  <string name="call_log_voicemail_header">Calls with voicemail only</string>
+
+  <!-- The header to show that call log is only showing incoming calls. -->
+  <string name="call_log_incoming_header">Incoming calls only</string>
+
+  <!-- The header to show that call log is only showing outgoing calls. -->
+  <string name="call_log_outgoing_header">Outgoing calls only</string>
+
+  <!-- The header to show that call log is only showing missed calls. -->
+  <string name="call_log_missed_header">Missed calls only</string>
 </resources>

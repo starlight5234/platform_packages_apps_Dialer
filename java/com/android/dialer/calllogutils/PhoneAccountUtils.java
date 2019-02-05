@@ -17,13 +17,29 @@
 package com.android.dialer.calllogutils;
 
 import android.content.Context;
+import android.graphics.drawable.Drawable;
 import android.support.annotation.Nullable;
 import android.telecom.PhoneAccount;
 import android.telecom.PhoneAccountHandle;
 import com.android.dialer.telecom.TelecomUtil;
+import java.util.ArrayList;
+import java.util.List;
+
 
 /** Methods to help extract {@code PhoneAccount} information from database and Telecomm sources. */
 public class PhoneAccountUtils {
+
+  /**
+    Extract account Icon from PhoneAccount object
+  */
+  public static Drawable getAccountIcon(
+      Context context, @Nullable PhoneAccountHandle phoneAccount) {
+    PhoneAccount account = getAccountOrNull(context, phoneAccount);
+    if (account == null || account.getIcon() == null) {
+      return null;
+    }
+    return account.getIcon().loadDrawable(context);
+  }
 
   /** Extract account label from PhoneAccount object. */
   @Nullable
@@ -68,5 +84,19 @@ public class PhoneAccountUtils {
       return null;
     }
     return TelecomUtil.getPhoneAccount(context, accountHandle);
+  }
+
+  /** Return a list of phone accounts that are subscription/SIM accounts. */
+  public static List<PhoneAccountHandle> getSubscriptionPhoneAccounts(Context context) {
+    List<PhoneAccountHandle> subscriptionAccountHandles = new ArrayList<PhoneAccountHandle>();
+    final List<PhoneAccountHandle> accountHandles =
+        TelecomUtil.getCallCapablePhoneAccounts(context);
+    for (PhoneAccountHandle accountHandle : accountHandles) {
+      PhoneAccount account = TelecomUtil.getPhoneAccount(context, accountHandle);
+      if (account.hasCapabilities(PhoneAccount.CAPABILITY_SIM_SUBSCRIPTION)) {
+        subscriptionAccountHandles.add(accountHandle);
+      }
+    }
+    return subscriptionAccountHandles;
   }
 }

@@ -27,6 +27,11 @@ import android.telecom.VideoProfile.CameraCapabilities;
 import com.android.dialer.common.LogUtil;
 import com.android.dialer.logging.DialerImpression;
 import com.android.dialer.logging.LoggingBindings;
+import com.android.incallui.PrimaryCallTracker;
+import com.android.incallui.BottomSheetHelper;
+import com.android.incallui.QtiCallUtils;
+import com.android.incallui.call.DialerCall;
+import com.android.incallui.call.DialerCall.CameraDirection;
 import com.android.incallui.videotech.VideoTech.VideoTechListener;
 import com.android.incallui.videotech.utils.SessionModificationState;
 
@@ -100,42 +105,46 @@ public class ImsVideoCallCallback extends VideoCall.Callback {
         requestedProfile,
         responseProfile,
         videoTech.getSessionModificationState());
-
+    final int newSessionModificationState = getSessionModificationStateFromTelecomStatus(status);
     if (videoTech.getSessionModificationState()
         == SessionModificationState.WAITING_FOR_UPGRADE_TO_VIDEO_RESPONSE) {
       handler.removeCallbacksAndMessages(null); // Clear everything
 
-      final int newSessionModificationState = getSessionModificationStateFromTelecomStatus(status);
       if (status == VideoProvider.SESSION_MODIFY_REQUEST_SUCCESS) {
         // Telecom manages audio route for us
         listener.onUpgradedToVideo(false /* switchToSpeaker */);
+        // When call is modified to VT Tx,device is expected to open back camera
+        // Hence, resetting camera direction as -1 when modify call response to
+        // Vt-Tx only is received. Camera direction is set to a proper value
+        // based on the call type in VideoCallPresenter after call is modified.
+        if (requestedProfile != null
+            && QtiCallUtils.isVideoTxOnly(requestedProfile.getVideoState())
+            && responseProfile != null
+            && QtiCallUtils.isVideoTxOnly(responseProfile.getVideoState())) {
+          final PrimaryCallTracker primaryCallTracker =
+              BottomSheetHelper.getInstance().getPrimaryCallTracker();
+          if (primaryCallTracker != null) {
+            final DialerCall dialerCall = primaryCallTracker.getPrimaryCall();
+            if (dialerCall != null) {
+              dialerCall.setCameraDir(CameraDirection.CAMERA_DIRECTION_UNKNOWN);
+            } else {
+              LogUtil.e("ImsVideoCallCallback.onSessionModifyResponseReceived",
+                  "error setting cam dir Call is null");
+            }
+          } else {
+            LogUtil.e("ImsVideoCallCallback.onSessionModifyResponseReceived",
+                "error setting cam dir as primaryCallTracker is null");
+          }
+        }
       } else {
         // This will update the video UI to display the error message.
         videoTech.setSessionModificationState(newSessionModificationState);
       }
-
-      // Wait for 4 seconds and then clean the session modification state. This allows the video UI
-      // to stay up so that the user can read the error message.
-      //
-      // If the other person accepted the upgrade request then this will keep the video UI up until
-      // the call's video state change. Without this we would switch to the voice call and then
-      // switch back to video UI.
-      handler.postDelayed(
-          () -> {
-            if (videoTech.getSessionModificationState() == newSessionModificationState) {
-              LogUtil.i("ImsVideoCallCallback.onSessionModifyResponseReceived", "clearing state");
-              videoTech.setSessionModificationState(SessionModificationState.NO_REQUEST);
-            } else {
-              LogUtil.i(
-                  "ImsVideoCallCallback.onSessionModifyResponseReceived",
-                  "session modification state has changed, not clearing state");
-            }
-          },
-          CLEAR_FAILED_REQUEST_TIMEOUT_MILLIS);
     } else if (videoTech.getSessionModificationState()
         == SessionModificationState.RECEIVED_UPGRADE_TO_VIDEO_REQUEST) {
       requestedVideoState = VideoProfile.STATE_AUDIO_ONLY;
       videoTech.setSessionModificationState(SessionModificationState.NO_REQUEST);
+      return;
     } else if (videoTech.getSessionModificationState()
         == SessionModificationState.WAITING_FOR_RESPONSE) {
       videoTech.setSessionModificationState(getSessionModificationStateFromTelecomStatus(status));
@@ -143,7 +152,28 @@ public class ImsVideoCallCallback extends VideoCall.Callback {
       LogUtil.i(
           "ImsVideoCallCallback.onSessionModifyResponseReceived",
           "call is not waiting for response, doing nothing");
+      return;
     }
+
+
+    // Wait for 4 seconds and then clean the session modification state. This allows the video UI
+    // to stay up so that the user can read the error message.
+    //
+    // If the other person accepted the upgrade request then this will keep the video UI up until
+    // the call's video state change. Without this we would switch to the voice call and then
+    // switch back to video UI.
+    handler.postDelayed(
+      () -> {
+        if (videoTech.getSessionModificationState() == newSessionModificationState) {
+          LogUtil.i("ImsVideoCallCallback.onSessionModifyResponseReceived", "clearing state");
+          videoTech.setSessionModificationState(SessionModificationState.NO_REQUEST);
+        } else {
+          LogUtil.i(
+              "ImsVideoCallCallback.onSessionModifyResponseReceived",
+              "session modification state has changed, not clearing state");
+        }
+      },
+      CLEAR_FAILED_REQUEST_TIMEOUT_MILLIS);
   }
 
   @SessionModificationState
@@ -181,23 +211,7 @@ public class ImsVideoCallCallback extends VideoCall.Callback {
   // signals. Also, its technically possible to have a pause/resume if the video signal degrades.
   @Override
   public void onCallSessionEvent(int event) {
-    switch (event) {
-      case Connection.VideoProvider.SESSION_EVENT_RX_PAUSE:
-        LogUtil.i("ImsVideoCallCallback.onCallSessionEvent", "rx_pause");
-        break;
-      case Connection.VideoProvider.SESSION_EVENT_RX_RESUME:
-        LogUtil.i("ImsVideoCallCallback.onCallSessionEvent", "rx_resume");
-        break;
-      case Connection.VideoProvider.SESSION_EVENT_CAMERA_FAILURE:
-        LogUtil.i("ImsVideoCallCallback.onCallSessionEvent", "camera_failure");
-        break;
-      case Connection.VideoProvider.SESSION_EVENT_CAMERA_READY:
-        LogUtil.i("ImsVideoCallCallback.onCallSessionEvent", "camera_ready");
-        break;
-      default:
-        LogUtil.i("ImsVideoCallCallback.onCallSessionEvent", "unknown event = : " + event);
-        break;
-    }
+    listener.onCallSessionEvent(event);
   }
 
   @Override

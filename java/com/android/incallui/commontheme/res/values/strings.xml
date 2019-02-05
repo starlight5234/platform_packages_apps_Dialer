@@ -26,6 +26,8 @@
 
   <string name="incall_content_description_swap_sim">Change SIM</string>
 
+  <string name="incall_content_description_add_call">Add call</string>
+
   <string name="incall_content_description_merge_calls">Merge calls</string>
 
   <string name="incall_content_description_earpiece">Handset earpiece</string>
@@ -35,6 +37,8 @@
   <string name="incall_content_description_bluetooth">Bluetooth</string>
 
   <string name="incall_content_description_headset">Wired headset</string>
+
+  <string name="incall_content_description_more">More Options</string>
 
   <!-- Text for the onscreen "Hold" button when it is not selected. Pressing it will put
      the call on hold. -->

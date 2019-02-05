@@ -19,7 +19,10 @@ package com.android.incallui;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.support.annotation.IntDef;
+import android.view.Display;
 import android.view.OrientationEventListener;
+import android.view.Surface;
+import android.view.WindowManager;
 import com.android.dialer.common.LogUtil;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -49,8 +52,8 @@ public class InCallOrientationEventListener extends OrientationEventListener {
   })
   public @interface ScreenOrientation {}
 
-  // We use SCREEN_ORIENTATION_USER so that reverse-portrait is not allowed.
-  public static final int ACTIVITY_PREFERENCE_ALLOW_ROTATION = ActivityInfo.SCREEN_ORIENTATION_USER;
+  public static final int ACTIVITY_PREFERENCE_ALLOW_ROTATION =
+      ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR;
 
   public static final int ACTIVITY_PREFERENCE_DISALLOW_ROTATION =
       ActivityInfo.SCREEN_ORIENTATION_NOSENSOR;
@@ -72,8 +75,11 @@ public class InCallOrientationEventListener extends OrientationEventListener {
 
   private boolean enabled = false;
 
+  private static WindowManager sWindowManager = null;
+
   public InCallOrientationEventListener(Context context) {
     super(context);
+    sWindowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
   }
 
   private static boolean isWithinRange(int value, int begin, int end) {
@@ -138,6 +144,12 @@ public class InCallOrientationEventListener extends OrientationEventListener {
       return;
     }
 
+    // Start with current UI orientation.
+    currentOrientation = getCurrentUiOrientation();
+    if (currentOrientation == SCREEN_ORIENTATION_UNKNOWN) {
+      currentOrientation = SCREEN_ORIENTATION_0;
+    }
+
     super.enable();
     enabled = true;
     if (notifyDeviceOrientationChange) {
@@ -155,7 +167,7 @@ public class InCallOrientationEventListener extends OrientationEventListener {
   @Override
   public void disable() {
     if (!enabled) {
-      Log.v(this, "enable: Orientation listener is already disabled. Ignoring...");
+      Log.v(this, "disable: Orientation listener is already disabled. Ignoring...");
       return;
     }
 
@@ -189,6 +201,30 @@ public class InCallOrientationEventListener extends OrientationEventListener {
       return SCREEN_ORIENTATION_180;
     } else if (isWithinThreshold(rotation, SCREEN_ORIENTATION_270, ROTATION_THRESHOLD)) {
       return SCREEN_ORIENTATION_90;
+    }
+    return SCREEN_ORIENTATION_UNKNOWN;
+  }
+
+  /**
+   * Returns the current display orientation.
+   * return values 0, 90, 180 and 270
+   * -1 if unknown
+   */
+  private static int getCurrentUiOrientation() {
+    final Display display = sWindowManager.getDefaultDisplay();
+    if (sWindowManager == null || display == null ) {
+      return SCREEN_ORIENTATION_UNKNOWN;
+    }
+
+    switch (display.getRotation()) {
+      case Surface.ROTATION_0:
+        return SCREEN_ORIENTATION_0;
+      case Surface.ROTATION_90:
+        return SCREEN_ORIENTATION_90;
+      case Surface.ROTATION_180:
+        return SCREEN_ORIENTATION_180;
+      case Surface.ROTATION_270:
+        return SCREEN_ORIENTATION_270;
     }
     return SCREEN_ORIENTATION_UNKNOWN;
   }

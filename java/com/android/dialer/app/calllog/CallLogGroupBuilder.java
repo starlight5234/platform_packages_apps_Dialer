@@ -31,7 +31,9 @@ import com.android.dialer.compat.telephony.TelephonyManagerCompat;
 import com.android.dialer.inject.ApplicationContext;
 import com.android.dialer.phonenumbercache.CallLogQuery;
 import com.android.dialer.phonenumberutil.PhoneNumberHelper;
+import com.android.dialer.util.DialerUtils;
 import java.util.Objects;
+import java.util.regex.Pattern;
 
 /**
  * Groups together calls in the call log. The primary grouping attempts to group together calls to
@@ -110,6 +112,8 @@ public class CallLogGroupBuilder {
     String groupPostDialDigits = cursor.getString(CallLogQuery.POST_DIAL_DIGITS);
     String groupViaNumbers = cursor.getString(CallLogQuery.VIA_NUMBER);
     int groupCallType = cursor.getInt(CallLogQuery.CALL_TYPE);
+    boolean isGroupConfCallLog = DialerUtils.isConferenceURICallLog(groupNumber,
+        groupPostDialDigits);
     int groupSize = 1;
 
     String number;
@@ -119,6 +123,7 @@ public class CallLogGroupBuilder {
     int callFeatures;
     String accountComponentName;
     String accountId;
+    boolean isNumberConfCallLog = false;
     int callbackAction;
 
     while (cursor.moveToNext()) {
@@ -130,11 +135,13 @@ public class CallLogGroupBuilder {
       callFeatures = cursor.getInt(CallLogQuery.FEATURES);
       accountComponentName = cursor.getString(CallLogQuery.ACCOUNT_COMPONENT_NAME);
       accountId = cursor.getString(CallLogQuery.ACCOUNT_ID);
+      isNumberConfCallLog = DialerUtils.isConferenceURICallLog(number, numberPostDialDigits);
       callbackAction =
           CallbackActionHelper.getCallbackAction(
               appContext, number, callFeatures, accountComponentName);
 
-      final boolean isSameNumber = equalNumbers(groupNumber, number);
+      final boolean isSameNumber = equalNumbers(groupNumber, isGroupConfCallLog,
+          number, isNumberConfCallLog);
       final boolean isSamePostDialDigits = groupPostDialDigits.equals(numberPostDialDigits);
       final boolean isSameViaNumbers = groupViaNumbers.equals(numberViaNumbers);
       final boolean isSameAccount =
@@ -176,6 +183,8 @@ public class CallLogGroupBuilder {
         groupCallType = callType;
         groupAccountComponentName = accountComponentName;
         groupAccountId = accountId;
+        isGroupConfCallLog = DialerUtils.isConferenceURICallLog(groupNumber,
+            groupPostDialDigits);
         groupCallbackAction = callbackAction;
         groupFeatures = callFeatures;
       }
@@ -196,10 +205,28 @@ public class CallLogGroupBuilder {
    */
   @VisibleForTesting
   boolean equalNumbers(@Nullable String number1, @Nullable String number2) {
+    return equalNumbers(number1, false, number2, false);
+  }
+
+  boolean equalNumbers(String number1, boolean isConf1, String number2, boolean isConf2) {
     if (PhoneNumberHelper.isUriNumber(number1) || PhoneNumberHelper.isUriNumber(number2)) {
       return compareSipAddresses(number1, number2);
+    } else if (isConf1 && isConf2) {
+      Pattern pattern = Pattern.compile("[,;]");
+      String[] num1 = pattern.split(number1);
+      String[] num2 = pattern.split(number2);
+      if (num1 == null || num2 == null || num1.length != num2.length) {
+        return false;
+      }
+      for (int i = 0; i < num1.length; i++) {
+        if (!PhoneNumberUtils.compare(num1[i], num2[i])) {
+          return false;
+        }
+      }
+      return true;
+    } else if (isConf1 != isConf2) {
+      return false;
     }
-
     // PhoneNumberUtils.compare(String, String) ignores special characters such as '#'. For example,
     // it thinks "123" and "#123" are identical enough for caller ID purposes.
     // When either input number contains special characters, we put the two in the same group iff

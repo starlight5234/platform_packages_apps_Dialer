@@ -36,13 +36,15 @@ import com.android.incallui.call.CallList;
 import com.android.incallui.call.DialerCall;
 import com.android.incallui.call.DialerCallListener;
 import com.android.incallui.incalluilock.InCallUiLock;
+import com.android.incallui.InCallPresenter.InCallDetailsListener;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
 /** Manages changes for an incoming call screen. */
 public class AnswerScreenPresenter
-    implements AnswerScreenDelegate, DialerCall.CannedTextResponsesLoadedListener {
+    implements AnswerScreenDelegate, DialerCall.CannedTextResponsesLoadedListener,
+    InCallDetailsListener {
   private static final int ACCEPT_REJECT_CALL_TIME_OUT_IN_MILLIS = 5000;
 
   @NonNull private final Context context;
@@ -60,6 +62,7 @@ public class AnswerScreenPresenter
       answerScreen.setTextResponses(call.getCannedSmsResponses());
     }
     call.addCannedTextResponsesLoadedListener(this);
+    InCallPresenter.getInstance().addDetailsListener(this);
 
     PseudoScreenState pseudoScreenState = InCallPresenter.getInstance().getPseudoScreenState();
     if (AnswerProximitySensor.shouldUse(context, call)) {
@@ -84,6 +87,7 @@ public class AnswerScreenPresenter
   @Override
   public void onAnswerScreenUnready() {
     call.removeCannedTextResponsesLoadedListener(this);
+    InCallPresenter.getInstance().removeDetailsListener(this);
   }
 
   @Override
@@ -224,6 +228,17 @@ public class AnswerScreenPresenter
     }
   }
 
+  @Override
+  public void onDetailsChanged(DialerCall dialerCall, android.telecom.Call.Details details) {
+    // Only update if the changes are for the current call
+    LogUtil.v(
+        "AnswerScreenPresenter.onDetailsChanged",
+        "call: %s, details: %s", dialerCall, details);
+    if (dialerCall != null && dialerCall.equals(call)) {
+      answerScreen.updateAnswerScreenUi();
+    }
+  }
+
   private class AnswerOnDisconnected implements DialerCallListener {
 
     private final DialerCall disconnectingCall;
@@ -266,6 +281,9 @@ public class AnswerScreenPresenter
 
     @Override
     public void onEnrichedCallSessionUpdate() {}
+
+    @Override
+    public void onSuplServiceMessage(String suplNotificationMessage) {}
   }
 
   private boolean isSmsResponseAllowed(DialerCall call) {

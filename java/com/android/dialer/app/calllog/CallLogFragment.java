@@ -29,6 +29,7 @@ import android.database.Cursor;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.preference.PreferenceManager;
 import android.provider.CallLog;
 import android.provider.CallLog.Calls;
 import android.provider.ContactsContract;
@@ -39,10 +40,17 @@ import android.support.v13.app.FragmentCompat.OnRequestPermissionsResultCallback
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.telephony.SubscriptionInfo;
+import android.telephony.SubscriptionManager;
+import android.telephony.TelephonyManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemSelectedListener;
+import android.widget.ArrayAdapter;
+import android.widget.Spinner;
 import android.widget.ImageView;
 import android.widget.TextView;
 import com.android.dialer.app.Bindings;
@@ -55,6 +63,7 @@ import com.android.dialer.app.contactinfo.ContactInfoCache.OnContactInfoChangedL
 import com.android.dialer.app.contactinfo.ExpirableCacheHeadlessFragment;
 import com.android.dialer.app.voicemail.VoicemailPlaybackPresenter;
 import com.android.dialer.blocking.FilteredNumberAsyncQueryHandler;
+import com.android.dialer.compat.telephony.TelephonyManagerCompat;
 import com.android.dialer.common.Assert;
 import com.android.dialer.common.FragmentUtils;
 import com.android.dialer.common.LogUtil;
@@ -162,6 +171,50 @@ public class CallLogFragment extends Fragment
   protected CallLogModalAlertManager modalAlertManager;
   private ViewGroup modalAlertView;
 
+  // The Spinners to filter call log
+  private Spinner filterSlotSpinnerView;
+  private Spinner filterStatusSpinnerView;
+  // Key for the call log sub saved in the default preference
+  private static final String PREFERENCE_KEY_CALLLOG_SLOT = "call_log_slot";
+  private static final int INVALID_SIM_SLOT_INDEX = -1;
+  // Default to all slots
+  private int callSlotFilter = INVALID_SIM_SLOT_INDEX;
+  private boolean isFilteringSupported;
+  private OnItemSelectedListener slotSelectedListener = new OnItemSelectedListener() {
+    @Override
+    public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+      LogUtil.d("Slot selected, position: " + position, toString());
+      int slot = position - 1;
+      if (slot != callSlotFilter) {
+        callSlotFilter = slot;
+        setSelectedSlotId(slot);
+        fetchCalls();
+      }
+    }
+
+    @Override
+    public void onNothingSelected(AdapterView<?> parent) {
+      // Do nothing.
+    }
+  };
+
+  private OnItemSelectedListener statusSelectedListener = new OnItemSelectedListener() {
+    @Override
+    public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+      LogUtil.d("Status selected, position: " + position, toString());
+      int type = ((SpinnerContent)parent.getItemAtPosition(position)).value;
+      if (type != callTypeFilter) {
+        callTypeFilter = type;
+        fetchCalls();
+      }
+    }
+
+    @Override
+    public void onNothingSelected(AdapterView<?> parent) {
+      // Do nothing.
+    }
+  };
+
   public CallLogFragment() {
     this(CallLogQueryHandler.CALL_TYPE_ALL, NO_LOG_LIMIT);
   }
@@ -220,6 +273,9 @@ public class CallLogFragment extends Fragment
     }
 
     final Activity activity = getActivity();
+    TelephonyManager telephonyManager = activity.getSystemService(TelephonyManager.class);
+    isFilteringSupported = isCallLogActivity
+        && TelephonyManagerCompat.getPhoneCount(telephonyManager) > 1;
     final ContentResolver resolver = activity.getContentResolver();
     callLogQueryHandler = new CallLogQueryHandler(activity, resolver, this, logLimit);
     setHasOptionsMenu(true);
@@ -322,6 +378,12 @@ public class CallLogFragment extends Fragment
     multiSelectUnSelectAllViewContent.setOnClickListener(null);
     selectUnselectAllIcon.setOnClickListener(this);
     selectUnselectAllViewText.setOnClickListener(this);
+    if (isFilteringSupported) {
+      filterSlotSpinnerView = (Spinner) view.findViewById(R.id.filter_sub_spinner);
+      filterStatusSpinnerView = (Spinner) view.findViewById(R.id.filter_status_spinner);
+    } else {
+      view.findViewById(R.id.filter_container).setVisibility(View.GONE);
+    }
   }
 
   protected void setupData() {
@@ -357,6 +419,7 @@ public class CallLogFragment extends Fragment
     if (adapter.getOnScrollListener() != null) {
       recyclerView.addOnScrollListener(adapter.getOnScrollListener());
     }
+    updateFilterSpinnerViews();
     fetchCalls();
   }
 
@@ -490,7 +553,20 @@ public class CallLogFragment extends Fragment
 
   @Override
   public void fetchCalls() {
-    callLogQueryHandler.fetchCalls(callTypeFilter, dateLimit);
+    if (isFilteringSupported) {
+      if (callSlotFilter != INVALID_SIM_SLOT_INDEX) {
+        SubscriptionInfo subInfo = SubscriptionManager.from(getActivity())
+            .getActiveSubscriptionInfoForSimSlotIndex(callSlotFilter);
+        if (subInfo != null) {
+          callLogQueryHandler.fetchCalls(callTypeFilter, dateLimit,
+              subInfo.getIccId());
+        }
+      } else {
+        callLogQueryHandler.fetchCalls(callTypeFilter, dateLimit);
+      }
+    } else {
+      callLogQueryHandler.fetchCalls(callTypeFilter, dateLimit);
+    }
     if (!isCallLogActivity
         && getActivity() != null
         && !getActivity().isFinishing()
@@ -726,6 +802,53 @@ public class CallLogFragment extends Fragment
           getContext().getDrawable(R.drawable.ic_empty_check_mark_white_24dp));
       getAdapter().onAllDeselected();
     }
+  }
+
+  /**
+   * Initialize the filter views content.
+   */
+  private void updateFilterSpinnerViews() {
+    if (filterSlotSpinnerView == null || filterStatusSpinnerView == null) {
+      LogUtil.d("The filter spinner view is null!", toString());
+      return;
+    }
+
+    // Update the sub filter's content.
+    final SubscriptionManager subscriptionManager = SubscriptionManager.from(getActivity());
+    if (subscriptionManager.getActiveSubscriptionInfoCount() < 2) {
+      filterSlotSpinnerView.setVisibility(View.GONE);
+    }else{
+      ArrayAdapter<SpinnerContent> filterSlotAdapter = new ArrayAdapter<SpinnerContent>(
+          getActivity(), R.layout.call_log_spinner_item,
+          SpinnerContent.setupSlotFilterContent(getActivity()));
+      if (filterSlotAdapter.getCount() <= 1) {
+        filterSlotSpinnerView.setVisibility(View.GONE);
+      } else{
+        callSlotFilter = getSelectedSlotId();
+        filterSlotSpinnerView.setAdapter(filterSlotAdapter);
+        filterSlotSpinnerView.setOnItemSelectedListener(slotSelectedListener);
+        SpinnerContent.setSpinnerContentValue(filterSlotSpinnerView, callSlotFilter);
+      }
+    }
+    // Update the status filter's content.
+    ArrayAdapter<SpinnerContent> filterStatusAdapter = new ArrayAdapter<SpinnerContent>(
+        getActivity(), R.layout.call_log_spinner_item,
+        SpinnerContent.setupStatusFilterContent(getActivity(), false));
+    filterStatusSpinnerView.setAdapter(filterStatusAdapter);
+    filterStatusSpinnerView.setOnItemSelectedListener(statusSelectedListener);
+    SpinnerContent.setSpinnerContentValue(filterStatusSpinnerView, callTypeFilter);
+  }
+
+  private int getSelectedSlotId() {
+    // Get the saved selected sub, and the default value is display all.
+    return PreferenceManager.getDefaultSharedPreferences(getActivity()).getInt(
+        PREFERENCE_KEY_CALLLOG_SLOT, INVALID_SIM_SLOT_INDEX);
+  }
+
+  private void setSelectedSlotId(int slotId) {
+    // Save the selected sub to the default preference.
+    PreferenceManager.getDefaultSharedPreferences(getActivity()).edit()
+        .putInt(PREFERENCE_KEY_CALLLOG_SLOT, slotId).commit();
   }
 
   public interface HostInterface {

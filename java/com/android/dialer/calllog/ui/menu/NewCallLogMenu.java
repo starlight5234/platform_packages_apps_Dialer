@@ -21,6 +21,7 @@ import android.provider.CallLog.Calls;
 import android.view.View;
 import com.android.dialer.calllog.CallLogComponent;
 import com.android.dialer.calllog.model.CoalescedRow;
+import com.android.dialer.calllogutils.CallTypeHelper;
 import com.android.dialer.common.concurrent.DefaultFutureCallback;
 import com.android.dialer.historyitemactions.HistoryItemActionBottomSheet;
 import com.google.common.util.concurrent.Futures;
@@ -37,7 +38,8 @@ public final class NewCallLogMenu {
 
       // If the user opens the bottom sheet for an unread call, clear the notifications and make the
       // row not bold immediately. To do this, mark all of the calls in group as read.
-      if (!row.getIsRead() && row.getCallType() == Calls.MISSED_TYPE) {
+      if (!row.getIsRead() && (row.getCallType() == Calls.MISSED_TYPE
+            || row.getCallType() == CallTypeHelper.MISSED_IMS_TYPE)) {
         Futures.addCallback(
             CallLogComponent.get(context)
                 .getClearMissedCalls()
