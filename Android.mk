@@ -146,7 +146,7 @@ LOCAL_STATIC_ANDROID_LIBRARIES := \
 	android-support-v7-recyclerview \
 
 LOCAL_JAVA_LIBRARIES := \
-	dialer-auto-value-target \
+	qti-dialer-auto-value-target \
 	org.apache.http.legacy \
 	ims-ext-common \
         ims-common \
