@@ -83,6 +83,7 @@ import com.android.incallui.incall.protocol.InCallScreen;
 import com.android.incallui.incall.protocol.InCallScreenDelegate;
 import com.android.incallui.incall.protocol.InCallScreenDelegateFactory;
 import com.android.incallui.incall.protocol.PrimaryCallState;
+import com.android.incallui.incall.protocol.PrimaryCallState.ButtonState;
 import com.android.incallui.incall.protocol.PrimaryInfo;
 import com.android.incallui.incall.protocol.SecondaryInfo;
 import com.android.incallui.PictureModeHelper;
@@ -1180,6 +1181,13 @@ public class VideoCallFragment extends Fragment
   @Override
   public void setCallState(@NonNull PrimaryCallState primaryCallState) {
     LogUtil.i("VideoCallFragment.setCallState", primaryCallState.toString());
+    switchOnHoldCallController.setVisible(
+        primaryCallState.swapToSecondaryButtonState() != ButtonState.NOT_SUPPORT
+        && !VideoUtils.hasSentVideoUpgradeRequest(primaryCallState.sessionModificationState()));
+    switchOnHoldCallController.setEnabled(
+        primaryCallState.swapToSecondaryButtonState() == ButtonState.ENABLED
+        && !VideoUtils.hasSentVideoUpgradeRequest(primaryCallState.sessionModificationState()));
+
     contactGridManager.setCallState(primaryCallState);
   }
 
