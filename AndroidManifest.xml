@@ -38,6 +38,7 @@
   <uses-permission android:name="android.permission.PROCESS_OUTGOING_CALLS"/>
   <uses-permission android:name="android.permission.NFC"/>
   <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
+  <uses-permission android:name="android.permission.READ_PRIVILEGED_PHONE_STATE"/>
   <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
   <uses-permission android:name="android.permission.MODIFY_PHONE_STATE"/>
   <uses-permission android:name="android.permission.WAKE_LOCK"/>
@@ -102,6 +103,8 @@
   <uses-permission android:name="com.oppo.launcher.permission.READ_SETTINGS"/>
   <uses-permission android:name="com.oppo.launcher.permission.WRITE_SETTINGS"/>
 
+  <uses-permission android:name="com.qti.permission.BIND_QTI_IMS_SERVICE" />
+
   <application
     android:hardwareAccelerated="true"
     android:icon="@mipmap/ic_launcher_phone"
@@ -110,6 +113,8 @@
     android:supportsRtl="true"
     android:usesCleartextTraffic="false"
     android:extractNativeLibs="false">
+
+    <uses-library android:name="ims-ext-common" />
   </application>
 
 </manifest>
