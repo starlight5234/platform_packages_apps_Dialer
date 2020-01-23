@@ -690,6 +690,7 @@ public class DialerCall implements VideoTechListener, StateChangedListener, Capa
       phoneAccountHandle = newPhoneAccountHandle;
 
       if (phoneAccountHandle != null) {
+        callProviderLabel = "";
         PhoneAccount phoneAccount = telecomManager.getPhoneAccount(phoneAccountHandle);
         if (phoneAccount != null) {
           isCallSubjectSupported =
