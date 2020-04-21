@@ -1580,8 +1580,8 @@ public class InCallActivity extends TransactionSafeFragmentActivity
   }
 
   private boolean shouldAllowAnswerAndRelease(DialerCall call) {
-    if (!call.answeringDisconnectsOtherCall()) {
-      LogUtil.i("InCallActivity.shouldAllowAnswerAndRelease", "disabled by extra");
+    if (CallList.getInstance().getActiveOrBackgroundCall() == null) {
+      LogUtil.i("InCallActivity.shouldAllowAnswerAndRelease", "no active or background call");
       return false;
     }
     if (getSystemService(TelephonyManager.class).getPhoneType()
