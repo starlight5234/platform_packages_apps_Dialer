@@ -234,6 +234,11 @@ public class QtiCallUtils {
         }
     }
 
+    public static DialerCall getIncomingCall() {
+        CallList callList = InCallPresenter.getInstance().getCallList();
+        return callList == null ? null : callList.getIncomingCall();
+    }
+
     /** This method converts the QtiCallConstants' Orientation modes to the ActivityInfo
      * screen orientation.
      */
